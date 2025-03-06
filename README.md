@@ -1,11 +1,14 @@
-Sistema de Reserva - Sovrano
-Descrição do Projeto
-O Sovrano é um sistema de reservas online criado para oferecer uma experiência sofisticada e prática, permitindo que os clientes do restaurante façam reservas de maneira eficiente e segura.
+# **Sovrano - Sistema de Reserva**
+## **Descrição do Projeto**
+### O Sovrano é um sistema de reservas online desenvolvido para oferecer aos clientes uma experiência sofisticada e ágil ao realizar suas reservas em um restaurante de alto padrão. O sistema foi projetado para ser fácil de usar, mantendo a elegância e excelência esperadas por nossos clientes.
 
-Com foco na elegância e no atendimento de alto padrão, o sistema oferece as seguintes funcionalidades essenciais:
+## **Funcionalidades**
+1. Cadastro de Usuário: Usuários podem se registrar no sistema com suas informações pessoais (nome, e-mail, telefone e senha), permitindo que gerenciem suas reservas de maneira prática.
 
-Cadastro de Usuário: Usuários podem se cadastrar, criando um perfil com informações como nome, e-mail, telefone e senha.
-Login e Autenticação: Apenas usuários autenticados têm acesso às funcionalidades de reserva. O login é feito de forma segura, garantindo a privacidade de cada cliente.
-Gestão de Reservas: O sistema permite que os usuários realizem reservas, editem ou cancelem suas reservas de acordo com a disponibilidade.
-Status da Reserva: Cada reserva possui um status (confirmada, pendente ou cancelada), que permite o acompanhamento da situação da reserva em tempo real.
-Este sistema foi desenvolvido para garantir uma experiência de reserva ágil, mas sempre alinhada à sofisticação e ao nível de excelência esperado pelos clientes do restaurante Sovrano.
+2. Login e Autenticação: Somente usuários autenticados têm acesso à funcionalidade de reservas. A autenticação é realizada de maneira segura, garantindo a privacidade e proteção dos dados.
+
+3. Gestão de Reservas: Os usuários podem realizar reservas, editar ou cancelar reservas previamente feitas. Cada reserva inclui informações como data, hora, quantidade de pessoas e status.
+
+4. Status da Reserva: O sistema permite acompanhar o status de cada reserva (confirmada, pendente ou cancelada), proporcionando visibilidade em tempo real.
+
+### O Sovrano visa não só facilitar o processo de reserva, mas também garantir uma experiência de usuário impecável e alinhada aos padrões de sofisticação do restaurante.
