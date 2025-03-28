@@ -15,6 +15,7 @@ import lombok.Data;
 public class Reservation {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idReserva;
+    private String nome;
     private LocalDateTime reservationDate;
     private int quantPessoas;
     private StatusReserva status=StatusReserva.CONFIRMADA;
