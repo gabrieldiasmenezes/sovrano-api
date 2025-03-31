@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import br.com.fiap.reserva_Sovrano.components.StatusReserva;
 import br.com.fiap.reserva_Sovrano.model.Reservation;
 import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
+import jakarta.validation.Valid;
 
 
 @RestController
@@ -29,7 +30,7 @@ public class ReservationController {
 
     @PostMapping
     @ResponseStatus(code=HttpStatus.CREATED)
-    public ResponseEntity<Reservation> create(@RequestBody Reservation reservation) {
+    public ResponseEntity<Reservation> create(@RequestBody @Valid Reservation reservation) {
         log.info("Criando reserva {}", reservation);
         reservation.setStatus(StatusReserva.CONFIRMADA);
         repository.save(reservation);
@@ -49,6 +50,12 @@ public class ReservationController {
         Reservation reservation = getReservation(idReserva);
         reservation.setStatus(StatusReserva.CANCELADA);
         repository.save(reservation);
+    }
+    @DeleteMapping("excluir/{idReserva}")
+    public void delete(@PathVariable Long idReserva){
+        log.info("Cancelando reserva " + idReserva);
+        Reservation reservation = getReservation(idReserva);
+        repository.delete(reservation);
     }
 
     @PutMapping("{idReserva}")
