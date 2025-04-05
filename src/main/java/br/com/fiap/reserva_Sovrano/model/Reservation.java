@@ -13,10 +13,16 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Reservation {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idReserva;
@@ -35,6 +41,8 @@ public class Reservation {
     @Min(value = 1, message = "A quantidade de pessoas deve ser no mínimo 1")
     @Max(value = 8, message = "A quantidade máxima de pessoas por reserva é 8")
     private int qnt;
+
+    @Builder.Default
     private StatusReserva status=StatusReserva.CONFIRMADA;
     
 }
