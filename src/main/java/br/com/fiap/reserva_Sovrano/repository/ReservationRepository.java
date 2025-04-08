@@ -6,4 +6,5 @@ import br.com.fiap.reserva_Sovrano.model.Reservation;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
     
+    
 }
