@@ -2,7 +2,9 @@ package br.com.fiap.reserva_Sovrano.config;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,61 +25,49 @@ public class DataBaseSeeder {
     @Autowired
     private AccountRepository accountRepository;
 
+    private Random random = new Random();
+
     @PostConstruct
     public void init() {
-
-        // Seed das reservas
-        reservationRepository.saveAll(
-            List.of(
-                Reservation.builder()
-                    .name("Gabriel Dias Menezes")
-                    .date(LocalDate.of(2025, 4, 10))
-                    .time(LocalTime.of(19, 30))
-                    .qnt(8)
-                    .build(),
-
-                Reservation.builder()
-                    .name("Laura Menezes")
-                    .date(LocalDate.of(2025, 4, 12))
-                    .time(LocalTime.of(20, 0))
-                    .qnt(2)
-                    .status(StatusReserva.CONFIRMADA)
-                    .build(),
-
-                Reservation.builder()
-                    .name("Carlos Andrade")
-                    .date(LocalDate.of(2025, 4, 15))
-                    .time(LocalTime.of(12, 15))
-                    .qnt(6)
-                    .status(StatusReserva.CONFIRMADA)
-                    .build()
-            )
+        // Criar usuários
+        var users = List.of(
+            Account.builder().name("Gabriel Dias").email("gabriel@dias.com").password("123456").phone("(11) 91234-5678").build(),
+            Account.builder().name("Laura Silva").email("laura@silva.com").password("abcdef").phone("(21) 99876-5432").build(),
+            Account.builder().name("Carlos Souza").email("carlos@souza.com").password("senha123").phone("(31) 92345-6789").build()
         );
 
-        // Seed dos usuários
-        accountRepository.saveAll(
-            List.of(
-                Account.builder()
-                    .name("Gabriel Dias")
-                    .email("gabriel@dias.com")
-                    .password("123456")
-                    .phone("(11) 91234-5678")
-                    .build(),
+        accountRepository.saveAll(users);
 
-                Account.builder()
-                    .name("Laura Silva")
-                    .email("laura@silva.com")
-                    .password("abcdef")
-                    .phone("(21) 99876-5432")
-                    .build(),
+        // Nomes aleatórios pra reservas
+        var names = List.of("Gabriel Dias Menezes", "Laura Menezes", "Carlos Andrade", "Sofia Lima", "Eduardo Costa", "Julia Alves");
 
-                Account.builder()
-                    .name("Carlos Souza")
-                    .email("carlos@souza.com")
-                    .password("senha123")
-                    .phone("(31) 92345-6789")
+        // Criar 50 reservas
+        List<Reservation> reservations = new ArrayList<>();
+        for (int i = 0; i < 50; i++) {
+            var name = names.get(random.nextInt(names.size()));
+            var date = LocalDate.now().plusDays(random.nextInt(30)); // próximo mês
+            var isAlmoco = random.nextBoolean();
+
+            // Gera hora aleatória no intervalo certo
+            var time = isAlmoco
+                ? LocalTime.of(12 + random.nextInt(4), random.nextBoolean() ? 0 : 30) // 12:00 – 15:00
+                : LocalTime.of(19 + random.nextInt(5), random.nextBoolean() ? 0 : 30); // 19:00 – 23:00
+
+            var qnt = 2 + random.nextInt(7); // de 2 a 8 pessoas
+
+            var status = random.nextBoolean() ? StatusReserva.CONFIRMADA : StatusReserva.PENDENTE;
+
+            reservations.add(
+                Reservation.builder()
+                    .name(name)
+                    .date(date)
+                    .time(time)
+                    .qnt(qnt)
+                    .status(status)
                     .build()
-            )
-        );
+            );
+        }
+
+        reservationRepository.saveAll(reservations);
     }
 }
