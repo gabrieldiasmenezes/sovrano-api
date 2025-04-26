@@ -16,9 +16,9 @@ public class ReservationSpecifications {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            if (filter.description() != null && !filter.description().isBlank()) {
+            if (filter.id_account() != null && !filter.id_account().isBlank()) {
                 predicates.add(
-                    cb.like(cb.lower(root.get("name")), "%" + filter.description().toLowerCase() + "%")
+                    cb.equal(root.get("account").get("id"), Long.valueOf(filter.id_account()))
                 );
             }
 

@@ -38,13 +38,10 @@ public class DataBaseSeeder {
 
         accountRepository.saveAll(users);
 
-        // Nomes aleatórios pra reservas
-        var names = List.of("Gabriel Dias Menezes", "Laura Menezes", "Carlos Andrade", "Sofia Lima", "Eduardo Costa", "Julia Alves");
 
         // Criar 50 reservas
         List<Reservation> reservations = new ArrayList<>();
         for (int i = 0; i < 50; i++) {
-            var name = names.get(random.nextInt(names.size()));
             var date = LocalDate.now().plusDays(random.nextInt(30)); // próximo mês
             var isAlmoco = random.nextBoolean();
 
@@ -59,11 +56,11 @@ public class DataBaseSeeder {
 
             reservations.add(
                 Reservation.builder()
-                    .name(name)
                     .date(date)
                     .time(time)
                     .qnt(qnt)
                     .status(status)
+                    .account(users.get(random.nextInt(users.size())))
                     .build()
             );
         }

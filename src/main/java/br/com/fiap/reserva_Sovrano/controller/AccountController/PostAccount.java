@@ -15,6 +15,7 @@ import br.com.fiap.reserva_Sovrano.model.Account;
 import br.com.fiap.reserva_Sovrano.repository.AccountRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/accounts")
@@ -35,7 +36,7 @@ public class PostAccount {
             @ApiResponse(responseCode = "400", description = "Dados inválidos ou incompletos")
         }
     )
-    public ResponseEntity<Account> create(@RequestBody Account account) {
+    public ResponseEntity<Account> create(@RequestBody @Valid Account account) {
         log.info("Cadastrando usuário: " + account.getName());
         repository.save(account);
         return ResponseEntity.status(201).body(account);

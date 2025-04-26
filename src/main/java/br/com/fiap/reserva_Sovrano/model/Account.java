@@ -1,7 +1,6 @@
 package br.com.fiap.reserva_Sovrano.model;
 
-
-
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -29,6 +28,7 @@ public class Account{
 
     @NotBlank(message = "O e-mail é obrigatório")
     @Email(message = "E-mail inválido")
+    @Column(unique = true)
     private String email;
 
     @NotBlank(message = "A senha é obrigatória")

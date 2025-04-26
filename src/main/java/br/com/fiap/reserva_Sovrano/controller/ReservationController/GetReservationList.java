@@ -17,7 +17,7 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/reservations")
 public class GetReservationList {
-    public record ReservationFilter(String description,LocalDate date,Integer qnt){}
+    public record ReservationFilter(String id_account,LocalDate date,Integer qnt){}
 
     @Autowired
     private ReservationRepository repository;

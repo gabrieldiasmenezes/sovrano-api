@@ -7,12 +7,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,10 +26,6 @@ import lombok.NoArgsConstructor;
 public class Reservation {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idReserva;
-    
-   @NotBlank(message = "O nome não pode estar em branco")
-    @Size(min = 3, max = 100, message = "O nome deve ter entre 3 e 100 caracteres")
-    private String name;
 
     @NotNull(message = "A data da reserva não pode ser nula")
     @FutureOrPresent(message = "A data da reserva deve estar no presente ou no futuro")
@@ -44,5 +40,10 @@ public class Reservation {
 
     @Builder.Default
     private StatusReserva status=StatusReserva.CONFIRMADA;
+
+    @ManyToOne
+    @JoinColumn(name = "id_account")
+    @NotNull(message = "A conta não pode ser nula")
+    private Account account;
     
 }

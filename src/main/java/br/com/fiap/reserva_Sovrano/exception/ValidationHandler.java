@@ -26,27 +26,4 @@ public class ValidationHandler {
     }
     
 }
-// package br.com.fiap.reserva_Sovrano.exception;
 
-// import java.util.List;
-
-// @RestControllerAdvice
-// public class ValidationHandler {
-
-//     // Record para capturar a mensagem de erro de cada campo
-//     record ValidationErrorMessage(String field, String message) {
-//         public ValidationErrorMessage(FieldError fieldError) {
-//             this(fieldError.getField(), fieldError.getDefaultMessage());
-//         }
-//     }
-
-//     // Tratador de exceções para erros de validação de campos
-//     @ExceptionHandler(MethodArgumentNotValidException.class)
-//     @ResponseStatus(code = HttpStatus.BAD_REQUEST)
-//     public List<ValidationErrorMessage> handle(MethodArgumentNotValidException e) {
-//         return e.getFieldErrors()
-//                 .stream()
-//                 .map(ValidationErrorMessage::new)  // Mapeia os erros para o formato esperado
-//                 .toList();  // Converte para uma lista
-//     }
-// }
