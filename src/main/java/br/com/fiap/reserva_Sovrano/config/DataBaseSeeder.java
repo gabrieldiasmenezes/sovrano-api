@@ -7,9 +7,11 @@ import java.util.List;
 import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import br.com.fiap.reserva_Sovrano.components.StatusReserva;
+import br.com.fiap.reserva_Sovrano.components.UserRole;
 import br.com.fiap.reserva_Sovrano.model.Account;
 import br.com.fiap.reserva_Sovrano.model.Reservation;
 import br.com.fiap.reserva_Sovrano.repository.AccountRepository;
@@ -25,32 +27,63 @@ public class DataBaseSeeder {
     @Autowired
     private AccountRepository accountRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
     private Random random = new Random();
 
     @PostConstruct
     public void init() {
-        // Criar usuários
-        var users = List.of(
-            Account.builder().name("Gabriel Dias").email("gabriel@dias.com").password("123456").phone("(11) 91234-5678").build(),
-            Account.builder().name("Laura Silva").email("laura@silva.com").password("abcdef").phone("(21) 99876-5432").build(),
-            Account.builder().name("Carlos Souza").email("carlos@souza.com").password("senha123").phone("(31) 92345-6789").build()
-        );
+        // Criar um admin (sem reservas)
+        var admin = Account.builder()
+            .name("Admin Restaurante")
+            .email("admin@restaurante.com")
+            .password(passwordEncoder.encode("admin123"))
+            .phone("(11) 90000-0000")
+            .role(UserRole.ADMIN)
+            .build();
 
-        accountRepository.saveAll(users);
+        // Criar 3 usuários comuns
+        var user1 = Account.builder()
+            .name("Gabriel Dias")
+            .email("gabriel@dias.com")
+            .password(passwordEncoder.encode("123456"))
+            .phone("(11) 91234-5678")
+            .role(UserRole.USER)
+            .build();
 
+        var user2 = Account.builder()
+            .name("Laura Silva")
+            .email("laura@silva.com")
+            .password(passwordEncoder.encode("123456"))
+            .phone("(21) 99876-5432")
+            .role(UserRole.USER)
+            .build();
 
-        // Criar 50 reservas
+        var user3 = Account.builder()
+            .name("Carlos Souza")
+            .email("carlos@souza.com")
+            .password(passwordEncoder.encode("123456"))
+            .phone("(31) 92345-6789")
+            .role(UserRole.USER)
+            .build();
+
+        var allAccounts = List.of(admin, user1, user2, user3);
+        accountRepository.saveAll(allAccounts);
+
+        // Criar reservas para os usuários (NÃO para o admin)
+        List<Account> usersOnly = List.of(user1, user2, user3);
         List<Reservation> reservations = new ArrayList<>();
+
         for (int i = 0; i < 50; i++) {
-            var date = LocalDate.now().plusDays(random.nextInt(30)); // próximo mês
+            var date = LocalDate.now().plusDays(random.nextInt(30));
             var isAlmoco = random.nextBoolean();
 
-            // Gera hora aleatória no intervalo certo
             var time = isAlmoco
-                ? LocalTime.of(12 + random.nextInt(4), random.nextBoolean() ? 0 : 30) // 12:00 – 15:00
-                : LocalTime.of(19 + random.nextInt(5), random.nextBoolean() ? 0 : 30); // 19:00 – 23:00
+                ? LocalTime.of(12 + random.nextInt(4), random.nextBoolean() ? 0 : 30)
+                : LocalTime.of(19 + random.nextInt(5), random.nextBoolean() ? 0 : 30);
 
-            var qnt = 2 + random.nextInt(7); // de 2 a 8 pessoas
+            var qnt = 2 + random.nextInt(7);
 
             var status = random.nextBoolean() ? StatusReserva.CONFIRMADA : StatusReserva.PENDENTE;
 
@@ -60,7 +93,7 @@ public class DataBaseSeeder {
                     .time(time)
                     .qnt(qnt)
                     .status(status)
-                    .account(users.get(random.nextInt(users.size())))
+                    .account(usersOnly.get(random.nextInt(usersOnly.size())))
                     .build()
             );
         }

@@ -1,4 +1,4 @@
-package br.com.fiap.reserva_Sovrano.dto;
+package br.com.fiap.reserva_Sovrano.model.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

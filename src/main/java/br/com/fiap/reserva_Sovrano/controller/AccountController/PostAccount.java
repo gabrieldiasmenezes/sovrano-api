@@ -1,10 +1,9 @@
 package br.com.fiap.reserva_Sovrano.controller.AccountController;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.fiap.reserva_Sovrano.model.Account;
+import br.com.fiap.reserva_Sovrano.model.dto.AccountResponse;
 import br.com.fiap.reserva_Sovrano.repository.AccountRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,11 +20,13 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/accounts")
 public class PostAccount {
-    private final Logger log = LoggerFactory.getLogger(getClass());
     
     @Autowired
     private AccountRepository repository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
     @PostMapping
     @ResponseStatus(code = HttpStatus.CREATED)
     @Operation(
@@ -36,10 +38,10 @@ public class PostAccount {
             @ApiResponse(responseCode = "400", description = "Dados inválidos ou incompletos")
         }
     )
-    public ResponseEntity<Account> create(@RequestBody @Valid Account account) {
-        log.info("Cadastrando usuário: " + account.getName());
-        repository.save(account);
-        return ResponseEntity.status(201).body(account);
+    public AccountResponse create(@RequestBody @Valid Account account) {
+        account.setPassword(passwordEncoder.encode(account.getPassword()));
+        var userSaved=repository.save(account);
+        return new AccountResponse(userSaved.getId(), userSaved.getName(), userSaved.getEmail(), userSaved.getPhone(), userSaved.getRole());
     }
     
 }
