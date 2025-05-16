@@ -21,16 +21,16 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         return http
                 .authorizeHttpRequests(auth -> auth
-            .requestMatchers(HttpMethod.POST, "/users/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/login/**").permitAll()
-                // Apenas autenticados
-                .requestMatchers("/reservations/me").authenticated() // usuário vê só suas reservas
-                .requestMatchers("/accounts/me").authenticated()     // usuário vê só seus dados
-
-                // Admin tem acesso total
-                .requestMatchers("/reservations").hasRole("ADMIN")   // admin vê todas as reservas
-                .requestMatchers("/accounts").hasRole("ADMIN") 
-            .anyRequest().authenticated()
+            // Libera primeiro o que for público
+                .requestMatchers("/login").permitAll()
+                .requestMatchers("/login/**").permitAll()
+                
+                // Depois coloca as regras protegidas
+                .requestMatchers(HttpMethod.GET, "/reservations/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/reservations/user/**").hasRole("USER")
+                .requestMatchers(HttpMethod.POST, "/reservations/**").hasAnyRole("USER")
+                // Qualquer outra rota precisa estar autenticada
+                .anyRequest().authenticated()
         )
         .csrf(csrf -> csrf.disable())
         .addFilterBefore(authFilter,UsernamePasswordAuthenticationFilter.class)

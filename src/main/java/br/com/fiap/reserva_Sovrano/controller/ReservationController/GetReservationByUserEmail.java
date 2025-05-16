@@ -28,7 +28,8 @@ public class GetReservationByUserEmail {
     )
     public List<Reservation> getMyReservations(Authentication authentication) {
         String email = authentication.getName(); 
+        System.out.println(email);
 
-        return repository.findByAccountEmail(email); 
+        return repository.findByAccount_Email(email);
     }
 }

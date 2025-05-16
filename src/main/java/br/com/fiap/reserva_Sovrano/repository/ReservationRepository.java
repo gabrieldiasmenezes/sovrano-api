@@ -9,6 +9,6 @@ import br.com.fiap.reserva_Sovrano.model.Reservation;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long>,JpaSpecificationExecutor<Reservation> {
     
-    List<Reservation> findByAccountEmail(String email); 
+    List<Reservation> findByAccount_Email(String email);
 
 }
