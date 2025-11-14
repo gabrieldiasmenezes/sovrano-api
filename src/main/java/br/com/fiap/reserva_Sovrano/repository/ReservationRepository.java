@@ -1,14 +1,25 @@
 package br.com.fiap.reserva_Sovrano.repository;
 
+
+import br.com.fiap.reserva_Sovrano.components.StatusReservation;
+import br.com.fiap.reserva_Sovrano.model.Reservations;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+@Repository
+public interface ReservationRepository extends JpaRepository<Reservations, Long> {
 
-import br.com.fiap.reserva_Sovrano.model.Reservation;
+    // Buscar reservas por usuário
+    List<Reservations> findByUserId(Long userId);
 
-public interface ReservationRepository extends JpaRepository<Reservation, Long>,JpaSpecificationExecutor<Reservation> {
-    
-    List<Reservation> findByAccount_Email(String email);
+    List<Reservations> findByTableId(Long tableId);
 
+    // Verificar se mesa está ocupada em um horário
+    boolean existsByTableIdAndReservationDateTimeAndStatus(
+        Long tableId,
+        LocalDateTime reservationDateTime,
+        StatusReservation status
+    );
 }
