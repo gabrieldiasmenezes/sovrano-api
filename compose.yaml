@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=sovrano_db'
+      - 'POSTGRES_PASSWORD=sovrano_pass'
+      - 'POSTGRES_USER=sovrano_user'
+    ports:
+      - '5432'
