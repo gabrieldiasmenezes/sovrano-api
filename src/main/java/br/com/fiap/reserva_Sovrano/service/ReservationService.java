@@ -1,5 +1,6 @@
 package br.com.fiap.reserva_Sovrano.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,13 +8,46 @@ import org.springframework.stereotype.Service;
 
 import br.com.fiap.reserva_Sovrano.components.StatusReservation;
 import br.com.fiap.reserva_Sovrano.model.Reservations;
+import br.com.fiap.reserva_Sovrano.model.Tables;
 import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
+import br.com.fiap.reserva_Sovrano.repository.TableRepository;
 
 @Service
 public class ReservationService {
 
     @Autowired
     private ReservationRepository reservationRepository;
+
+    @Autowired
+    private TableRepository tableRepository;
+
+
+    private Reservations getReservation(Long id){
+        return  reservationRepository.findById(id)
+                    .orElseThrow(()-> new IllegalArgumentException("Reserva não encontrada."));
+    }
+
+    private Tables getTable(Long id){
+        return  tableRepository.findById(id)
+                    .orElseThrow(()-> new IllegalArgumentException("Mesa não encontrada."));
+        
+    }
+
+    private void validateTableAvailability(Long id,LocalDateTime dateTime){
+        boolean isOccupied=reservationRepository
+                    .existsByTableIdAndReservationDateTimeAndStatus(id, dateTime, StatusReservation.CONFIRMED);
+        if(isOccupied){
+            throw new IllegalStateException("A mesa já foi reservada para esse horário");
+        }
+    }
+
+    private void setTableAvailability(Long id, boolean available){
+        Tables table=getTable(id);
+        table.setAvailable(available);
+        tableRepository.save(table);
+    }
+
+
 
     public List<Reservations> listAll() {
         return reservationRepository.findAll();
@@ -29,18 +63,10 @@ public class ReservationService {
 
     public Reservations create(Reservations reservation) {
         if(reservation.getReservationDateTime().isBefore(java.time.LocalDateTime.now())) {
-            throw new IllegalArgumentException("Reservation date must be in the future.");
+            throw new IllegalArgumentException("A reserva só poderá ser feita em uma data futura");
         }
 
-        boolean isOccupied = reservationRepository.existsByTableIdAndReservationDateTimeAndStatus(
-            reservation.getTableId(),
-            reservation.getReservationDateTime(),
-            StatusReservation.CONFIRMED
-        );
-
-        if(isOccupied) {
-            throw new IllegalStateException("Table is already reserved for this date and time.");
-        }
+       validateTableAvailability( reservation.getTableId(), reservation.getReservationDateTime());
 
         reservation.setStatus(StatusReservation.PENDING);
 
@@ -48,15 +74,22 @@ public class ReservationService {
     }
 
     public Reservations confirm(Long id) {
-        Reservations reservation = reservationRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
+        Reservations reservation=getReservation(id);
+        
+        validateTableAvailability(reservation.getTableId(), reservation.getReservationDateTime());
+        
+
+        setTableAvailability(reservation.getTableId(), false);
+  
         reservation.setStatus(StatusReservation.CONFIRMED);
         return reservationRepository.save(reservation);
     }
 
     public void cancel(Long id) {
-        Reservations reservation = reservationRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
+        Reservations reservation=getReservation(id);
+        
+        setTableAvailability(reservation.getTableId(), true);
+
         reservation.setStatus(StatusReservation.CANCELLED);
         reservationRepository.save(reservation);
     }
