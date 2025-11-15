@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import br.com.fiap.reserva_Sovrano.model.Users;
 import br.com.fiap.reserva_Sovrano.model.dto.UserResponse;
+import br.com.fiap.reserva_Sovrano.repository.UserRepository;
 import br.com.fiap.reserva_Sovrano.service.UserService;
 import jakarta.validation.Valid;
 
@@ -16,6 +17,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     // Buscar dados do usuário logado (somente name, email e phone)
     @GetMapping("/me")
@@ -53,5 +57,15 @@ public class UserController {
         return ResponseEntity.ok(
                 new UserResponse(createdUser.getName(), createdUser.getEmail(), createdUser.getPhone())
         );
+    }
+
+    @PatchMapping("/{id}/unblock")
+    public ResponseEntity<?> unblockUser(@PathVariable Long id) {
+        Users user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+                
+        userService.desblockUser(user);
+
+        return ResponseEntity.ok("Usuário desbloqueado com sucesso.");
     }
 }

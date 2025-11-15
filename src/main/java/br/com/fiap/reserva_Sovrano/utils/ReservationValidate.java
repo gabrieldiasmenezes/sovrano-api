@@ -9,9 +9,12 @@ import org.springframework.stereotype.Component;
 
 import br.com.fiap.reserva_Sovrano.components.Period;
 import br.com.fiap.reserva_Sovrano.components.StatusReservation;
+import br.com.fiap.reserva_Sovrano.components.UserRole;
 import br.com.fiap.reserva_Sovrano.model.Tables;
+import br.com.fiap.reserva_Sovrano.model.Users;
 import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
 import br.com.fiap.reserva_Sovrano.repository.TableRepository;
+import br.com.fiap.reserva_Sovrano.repository.UserRepository;
 
 
 @Component
@@ -22,6 +25,9 @@ public class ReservationValidate {
 
     @Autowired
     private TableRepository tableRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public void validateTableAvailability(Long id,LocalDateTime dateTime){
         boolean isOccupied=reservationRepository
@@ -119,6 +125,27 @@ public class ReservationValidate {
                 + (period == Period.LUNCH ? "almoço" : "jantar") +
                 ") neste dia."
             );
+        }
+    }
+
+    public void validateNoShowLimit(Long userId) {
+        Users user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+        if (user.getRole() != UserRole.BLOCK) {
+
+            if (user.getBlockedUntil() != null && user.getBlockedUntil().isAfter(LocalDate.now())) {
+                throw new IllegalStateException(
+                    "Você está bloqueado até " + user.getBlockedUntil() + 
+                    " devido a faltas consecutivas."
+                );
+            }
+
+            // se passou dos 30 dias, desbloqueamos automaticamente
+            user.setRole(UserRole.CUSTOMER);
+            user.setBlockedUntil(null);
+            user.setNoShowCount(0);
+            userRepository.save(user);
         }
     }
 

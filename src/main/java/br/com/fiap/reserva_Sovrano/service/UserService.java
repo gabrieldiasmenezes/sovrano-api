@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import br.com.fiap.reserva_Sovrano.components.UserRole;
 import br.com.fiap.reserva_Sovrano.model.Users;
 import br.com.fiap.reserva_Sovrano.repository.UserRepository;
 
@@ -26,6 +27,9 @@ public class UserService {
         if(userRepository.existsByEmail(user.getEmail())){
             throw new IllegalArgumentException("Email já registrado.");
         }
+
+        user.setBlockedUntil(null);
+        user.setNoShowCount(0);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
@@ -42,5 +46,13 @@ public class UserService {
         Users existingUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found."));
         userRepository.delete(existingUser);
+    }
+
+    public void desblockUser(Users user){
+        user.setRole(UserRole.CUSTOMER);
+        user.setBlockedUntil(null);
+        user.setNoShowCount(0);
+
+        userRepository.save(user);
     }
 }

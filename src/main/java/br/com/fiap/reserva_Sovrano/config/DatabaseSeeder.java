@@ -37,7 +37,7 @@ public class DatabaseSeeder {
     public void init() {
 
         // --------------------------
-        // USUÁRIOS (sem duplicar)
+        // USUÁRIOS
         // --------------------------
         Users admin = userRepository.findByEmail("admin@sovrano.com")
                 .orElseGet(() -> userRepository.save(
@@ -47,6 +47,8 @@ public class DatabaseSeeder {
                                 .phone("11900000000")
                                 .password(passwordEncoder.encode("admin123"))
                                 .role(UserRole.ADMIN)
+                                .noShowCount(0)
+                                .blockedUntil(null)
                                 .build()
                 ));
 
@@ -58,27 +60,26 @@ public class DatabaseSeeder {
                                 .phone("11999999999")
                                 .password(passwordEncoder.encode("dias123"))
                                 .role(UserRole.CUSTOMER)
+                                .noShowCount(0)
+                                .blockedUntil(null)
                                 .build()
                 ));
 
         // --------------------------
-        // MESAS (só cria se não existirem)
+        // MESAS
         // --------------------------
         if (tableRepository.count() == 0) {
 
             List<Tables> tables = new ArrayList<>();
 
-            // 8 mesas de 2 lugares
             for (int i = 0; i < 8; i++) {
                 tables.add(Tables.builder().capacity(2).available(true).build());
             }
 
-            // 8 mesas de 4 lugares
             for (int i = 0; i < 8; i++) {
                 tables.add(Tables.builder().capacity(4).available(true).build());
             }
 
-            // 2 mesas de 6 lugares
             for (int i = 0; i < 2; i++) {
                 tables.add(Tables.builder().capacity(6).available(true).build());
             }
@@ -87,7 +88,7 @@ public class DatabaseSeeder {
         }
 
         // --------------------------
-        // RESERVAS (apenas se não existirem)
+        // RESERVAS
         // --------------------------
         if (reservationRepository.count() == 0) {
 

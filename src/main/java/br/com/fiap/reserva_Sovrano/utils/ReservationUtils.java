@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import br.com.fiap.reserva_Sovrano.model.Reservations;
 import br.com.fiap.reserva_Sovrano.model.Tables;
+import br.com.fiap.reserva_Sovrano.model.dto.ReservationResponseDTO;
 import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
 import br.com.fiap.reserva_Sovrano.repository.TableRepository;
 import br.com.fiap.reserva_Sovrano.repository.UserRepository;
@@ -23,6 +24,20 @@ public class ReservationUtils {
     @Autowired
     private UserRepository userRepository;
 
+    public ReservationResponseDTO toDTO(Reservations r) {
+        var user = userRepository.findById(r.getUserId())
+                .orElse(null);
+
+        return new ReservationResponseDTO(
+                r.getId(),
+                r.getReservationDateTime(),
+                r.getPeopleCount(),
+                r.getStatus(),
+                user != null ? user.getEmail() : null,
+                r.getTableId()
+        )
+        ;
+    }
 
     public Reservations getReservation(Long id){
         return  reservationRepository.findById(id)

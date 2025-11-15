@@ -8,7 +8,8 @@ import java.util.List;
 
 public enum UserRole {
     CUSTOMER,
-    ADMIN;
+    ADMIN,
+    BLOCK;    
 
     // Converte o enum em GrantedAuthority para o Spring Security
     public Collection<? extends GrantedAuthority> getAuthorities() {

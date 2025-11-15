@@ -1,5 +1,7 @@
 package br.com.fiap.reserva_Sovrano.model;
 
+import java.time.LocalDate;
+
 import br.com.fiap.reserva_Sovrano.components.UserRole;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -39,4 +41,11 @@ public class Users {
     @NotNull(message = "User role is required.")
     @Enumerated(EnumType.STRING)
     private UserRole role;
+
+    @Column(name = "no_show_count")
+    private int noShowCount;
+
+    @Column(name = "blocked_until")
+    private LocalDate blockedUntil;
+
 }

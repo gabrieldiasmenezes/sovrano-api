@@ -1,9 +1,11 @@
 package br.com.fiap.reserva_Sovrano.controller.Reservation;
 
 import br.com.fiap.reserva_Sovrano.model.Reservations;
+import br.com.fiap.reserva_Sovrano.model.dto.ReservationResponseDTO;
 import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
 import br.com.fiap.reserva_Sovrano.service.Reservation.ReservationService;
 import br.com.fiap.reserva_Sovrano.specifications.ReservationSpecifications;
+import br.com.fiap.reserva_Sovrano.utils.ReservationUtils;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,10 @@ public class ReservationController {
     @Autowired
     private ReservationRepository reservationRepository;
 
+    @Autowired
+    private ReservationUtils reservationUtils;
+
+
     // -------------------------------
     // DTO de filtros para paginação
     // -------------------------------
@@ -41,9 +47,10 @@ public class ReservationController {
     // GET com paginação + filtros (melhor endpoint para o admin)
     // -----------------------------------------------------------
     @GetMapping
-    public Page<Reservations> findAll(ReservationFilter filters, Pageable pageable) {
+    public Page<ReservationResponseDTO> findAll(ReservationFilter filters, Pageable pageable) {
         var specification = ReservationSpecifications.withFilters(filters);
-        return reservationRepository.findAll(specification, pageable);
+        return reservationRepository.findAll(specification, pageable)
+            .map(reservationUtils :: toDTO);
     }
 
     // Buscar reservas por usuário
@@ -60,8 +67,10 @@ public class ReservationController {
 
     // Criar reserva
     @PostMapping
-    public ResponseEntity<Reservations> create(@Valid @RequestBody Reservations reservation) {
-        return ResponseEntity.ok(reservationService.create(reservation));
+    public ResponseEntity<ReservationResponseDTO> create(@Valid @RequestBody Reservations reservation) {
+        return ResponseEntity.ok(reservationUtils.toDTO(
+            reservationService.create(reservation)
+        ));
     }
 
     // Confirmar
@@ -78,8 +87,17 @@ public class ReservationController {
     }
 
     @PatchMapping("/{id}/complete")
-    public Reservations completeReservation(@PathVariable Long id) {
-        return reservationService.completeReservation(id);
+    public ReservationResponseDTO completeReservation(@PathVariable Long id) {
+        return reservationUtils.toDTO(reservationService.completeReservation(id));
+    }
+
+    @PutMapping("/{id}")
+        public ResponseEntity<ReservationResponseDTO> update(
+                @PathVariable Long id,
+                @RequestBody Reservations data
+        ) {
+            Reservations updated = reservationService.update(id, data);
+            return ResponseEntity.ok(reservationUtils.toDTO(updated));
     }
 
     // Deletar

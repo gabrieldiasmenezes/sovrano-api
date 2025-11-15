@@ -68,6 +68,9 @@ public class ReservationService {
         // 4. validar se aquela mesa específica está livre
         reservationValidate.validateTableAvailability(table.getId(), dateTime);
 
+        // 5. validar limite de no-shows do usuário
+        reservationValidate.validateNoShowLimit(reservation.getUserId());
+
         reservation.setStatus(StatusReservation.PENDING);
         return reservationRepository.save(reservation);
     }
@@ -75,7 +78,7 @@ public class ReservationService {
 
     public Reservations confirm(Long id) {
         Reservations reservation=reservationUtils.getReservation(id);
-        
+
         reservationValidate.validateTableAvailability(reservation.getTableId(), reservation.getReservationDateTime());
         
 
@@ -104,6 +107,40 @@ public class ReservationService {
         reservationUtils.setTableAvailability(res.getTableId(), true);
         res.setStatus(StatusReservation.COMPLETED);
         return reservationRepository.save(res);
+    }
+
+    public Reservations update(Long id, Reservations data) {
+
+        Reservations reservation = reservationUtils.getReservation(id);
+
+        // Atualizar data/hora
+        if (data.getReservationDateTime() != null) {
+
+            LocalDateTime dateTime = data.getReservationDateTime();
+
+            if (dateTime.isBefore(LocalDateTime.now())) {
+                throw new IllegalArgumentException("A reserva precisa ser feita para uma data futura.");
+            }
+
+            reservationValidate.validateRestaurantHours(dateTime);
+            reservationValidate.validateUserPeriodLimit(reservation.getUserId(), dateTime);
+            reservationValidate.validateAvailableTablesForPeople(data.getPeopleCount(), dateTime);
+            reservationValidate.validateTableAvailability(data.getTableId(), dateTime);
+
+            reservation.setReservationDateTime(dateTime);
+        }
+
+        // Atualizar quantidade de pessoas
+        if (data.getPeopleCount() != null) {
+            reservation.setPeopleCount(data.getPeopleCount());
+        }
+
+        // Atualizar mesa
+        if (data.getTableId() != null) {
+            reservation.setTableId(data.getTableId());
+        }
+
+        return reservationRepository.save(reservation);
     }
 
     public void delete(Long id) {

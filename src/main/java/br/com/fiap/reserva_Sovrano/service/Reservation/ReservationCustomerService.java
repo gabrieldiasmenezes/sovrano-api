@@ -13,6 +13,7 @@ import br.com.fiap.reserva_Sovrano.components.StatusReservation;
 import br.com.fiap.reserva_Sovrano.controller.Reservation.ReservationCustomerController.ReservationStatusFilter;
 import br.com.fiap.reserva_Sovrano.model.Reservations;
 import br.com.fiap.reserva_Sovrano.model.Tables;
+import br.com.fiap.reserva_Sovrano.model.dto.ReservationResponseDTO;
 import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
 import br.com.fiap.reserva_Sovrano.specifications.ReservationCustomerSpecifications;
 import br.com.fiap.reserva_Sovrano.utils.ReservationUtils;
@@ -34,7 +35,7 @@ public class ReservationCustomerService {
     // ===============================
     // LISTAR MINHAS RESERVAS
     // ===============================
-    public Page<Reservations> getMyReservations(
+    public Page<ReservationResponseDTO> getMyReservations(
             Authentication auth,
             ReservationStatusFilter filter,
             Pageable pageable
@@ -56,7 +57,7 @@ public class ReservationCustomerService {
             );
         }
 
-        return reservationRepository.findAll(specification, pageable);
+        return reservationRepository.findAll(specification, pageable).map(reservationUtils :: toDTO);
     }
 
 
@@ -93,6 +94,9 @@ public class ReservationCustomerService {
                 table.getId(),
                 dateTime
         );
+
+        // 5. validar limite de no-shows do usuário
+        reservationValidate.validateNoShowLimit(reservation.getUserId());
 
         reservation.setStatus(StatusReservation.PENDING);
 

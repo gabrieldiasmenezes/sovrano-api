@@ -40,6 +40,8 @@ public class SecurityConfig {
                 // O usuário só acessa o próprio perfil
                 .requestMatchers("/users/me/**").authenticated()
 
+                .requestMatchers("users/{id}/unblock").hasRole("ADMIN")
+
                 // O usuário só acessa **suas** reservas
                 .requestMatchers("/reservations/me/**").hasRole("CUSTOMER")
 
