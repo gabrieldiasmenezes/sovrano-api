@@ -25,4 +25,14 @@ public interface ReservationRepository extends JpaRepository<Reservations, Long>
     );
 
     List<Reservations> findByUserIdAndStatusNot(Long userId, StatusReservation status);
+
+    List<Reservations> findByReservationDateTimeBetween(LocalDateTime start,LocalDateTime end);
+    List<Reservations> findAllByStatus(StatusReservation status);
+
+    List<Reservations> findByUserIdAndReservationDateTimeBetweenAndStatusIn(
+        Long userId,
+        LocalDateTime start,
+        LocalDateTime end,
+        List<StatusReservation> statuses
+    );
 }

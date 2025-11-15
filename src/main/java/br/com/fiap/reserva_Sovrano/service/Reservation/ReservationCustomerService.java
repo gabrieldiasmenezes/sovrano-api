@@ -16,6 +16,7 @@ import br.com.fiap.reserva_Sovrano.model.Tables;
 import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
 import br.com.fiap.reserva_Sovrano.specifications.ReservationCustomerSpecifications;
 import br.com.fiap.reserva_Sovrano.utils.ReservationUtils;
+import br.com.fiap.reserva_Sovrano.utils.ReservationValidate;
 
 @Service
 public class ReservationCustomerService {
@@ -24,7 +25,10 @@ public class ReservationCustomerService {
     private ReservationRepository reservationRepository;
 
     @Autowired
-    private ReservationUtils reservationMethods;
+    private ReservationUtils reservationUtils;
+
+    @Autowired
+    private ReservationValidate reservationValidate;
 
 
     // ===============================
@@ -35,7 +39,7 @@ public class ReservationCustomerService {
             ReservationStatusFilter filter,
             Pageable pageable
     ) {
-        Long userId = reservationMethods.getUserId(auth);
+        Long userId = reservationUtils.getUserId(auth);
 
         var specification = Specification
                 .where(ReservationCustomerSpecifications.belongsToUser(userId));
@@ -61,7 +65,7 @@ public class ReservationCustomerService {
     // ===============================
     public Reservations createMyReservation(Reservations reservation, Authentication auth) {
 
-        Long userId = reservationMethods.getUserId(auth);
+        Long userId = reservationUtils.getUserId(auth);
         reservation.setUserId(userId); // garante que sempre será do usuário logado
 
         LocalDateTime dateTime = reservation.getReservationDateTime();
@@ -70,9 +74,8 @@ public class ReservationCustomerService {
             throw new IllegalArgumentException("A reserva precisa ser feita para uma data futura.");
         }
 
-        reservationMethods.validateRestaurantHours(dateTime);
-
-        Tables table = reservationMethods.getTable(reservation.getTableId());
+        reservationValidate.validateUserPeriodLimit(userId, dateTime);
+        Tables table = reservationUtils.getTable(reservation.getTableId());
 
         if (reservation.getPeopleCount() > table.getCapacity()) {
             throw new IllegalStateException(
@@ -81,12 +84,12 @@ public class ReservationCustomerService {
             );
         }
 
-        reservationMethods.validateAvailableTablesForPeople(
+        reservationValidate.validateAvailableTablesForPeople(
                 reservation.getPeopleCount(),
                 dateTime
         );
 
-        reservationMethods.validateTableAvailability(
+        reservationValidate.validateTableAvailability(
                 table.getId(),
                 dateTime
         );
@@ -101,16 +104,16 @@ public class ReservationCustomerService {
     // CONFIRMAR MINHA RESERVA
     // ===============================
     public Reservations confirmMyReservation(Long id, Authentication auth) {
-        Long userId = reservationMethods.getUserId(auth);
+        Long userId = reservationUtils.getUserId(auth);
 
-        Reservations reservation = reservationMethods.getReservationOwnedByUser(id, userId);
+        Reservations reservation = reservationUtils.getReservationOwnedByUser(id, userId);
 
-        reservationMethods.validateTableAvailability(
+        reservationValidate.validateTableAvailability(
                 reservation.getTableId(),
                 reservation.getReservationDateTime()
         );
 
-        reservationMethods.setTableAvailability(reservation.getTableId(), false);
+        reservationUtils.setTableAvailability(reservation.getTableId(), false);
 
         reservation.setStatus(StatusReservation.CONFIRMED);
 
@@ -122,11 +125,11 @@ public class ReservationCustomerService {
     // CANCELAR MINHA RESERVA
     // ===============================
     public void cancelMyReservation(Long id, Authentication auth) {
-        Long userId = reservationMethods.getUserId(auth);
+        Long userId = reservationUtils.getUserId(auth);
 
-        Reservations reservation = reservationMethods.getReservationOwnedByUser(id, userId);
+        Reservations reservation = reservationUtils.getReservationOwnedByUser(id, userId);
 
-        reservationMethods.setTableAvailability(reservation.getTableId(), true);
+        reservationUtils.setTableAvailability(reservation.getTableId(), true);
 
         reservation.setStatus(StatusReservation.CANCELLED);
         reservationRepository.save(reservation);
@@ -137,9 +140,9 @@ public class ReservationCustomerService {
     // ATUALIZAR MINHA RESERVA
     // ===============================
     public Reservations updateMyReservation(Long id, Reservations data, Authentication auth) {
-        Long userId = reservationMethods.getUserId(auth);
+        Long userId = reservationUtils.getUserId(auth);
 
-        Reservations reservation = reservationMethods.getReservationOwnedByUser(id, userId);
+        Reservations reservation = reservationUtils.getReservationOwnedByUser(id, userId);
 
         // Permitir atualizar apenas data/hora/mesa/pessoas
         if (data.getReservationDateTime() != null) {
@@ -150,9 +153,9 @@ public class ReservationCustomerService {
                 throw new IllegalArgumentException("A reserva precisa ser feita para uma data futura.");
             }
 
-            reservationMethods.validateRestaurantHours(dateTime);
-            reservationMethods.validateAvailableTablesForPeople(data.getPeopleCount(), dateTime);
-            reservationMethods.validateTableAvailability(reservation.getTableId(), dateTime);
+            reservationValidate.validateRestaurantHours(dateTime);
+            reservationValidate.validateAvailableTablesForPeople(data.getPeopleCount(), dateTime);
+            reservationValidate.validateTableAvailability(reservation.getTableId(), dateTime);
 
             reservation.setReservationDateTime(dateTime);
         }

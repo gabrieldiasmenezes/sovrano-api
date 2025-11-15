@@ -77,6 +77,11 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{id}/complete")
+    public Reservations completeReservation(@PathVariable Long id) {
+        return reservationService.completeReservation(id);
+    }
+
     // Deletar
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
