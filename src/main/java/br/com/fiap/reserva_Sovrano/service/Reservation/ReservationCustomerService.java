@@ -1,21 +1,24 @@
 package br.com.fiap.reserva_Sovrano.service.Reservation;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import br.com.fiap.reserva_Sovrano.components.StatusReservation;
+import br.com.fiap.reserva_Sovrano.controller.Reservation.ReservationCustomerController.ReservationStatusFilter;
 import br.com.fiap.reserva_Sovrano.model.Reservations;
 import br.com.fiap.reserva_Sovrano.model.Tables;
 import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
-import br.com.fiap.reserva_Sovrano.repository.UserRepository;
+import br.com.fiap.reserva_Sovrano.specifications.ReservationCustomerSpecifications;
 import br.com.fiap.reserva_Sovrano.utils.ReservationUtils;
 
 @Service
-public class ReservationUserService {
+public class ReservationCustomerService {
 
     @Autowired
     private ReservationRepository reservationRepository;
@@ -23,36 +26,33 @@ public class ReservationUserService {
     @Autowired
     private ReservationUtils reservationMethods;
 
-    @Autowired
-    private UserRepository userRepository;
-
-
-    // ===============================
-    // UTIL
-    // ===============================
-
-    private Long getUserId(Authentication auth) {
-        return userRepository.findByEmail(auth.getName())
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"))
-                .getId();
-    }
-
-    private Reservations getReservationOwnedByUser(Long id, Long userId) {
-        Reservations r = reservationMethods.getReservation(id);
-
-        if (!r.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Você não pode alterar uma reserva de outro usuário");
-        }
-        return r;
-    }
-
 
     // ===============================
     // LISTAR MINHAS RESERVAS
     // ===============================
-    public List<Reservations> getMyReservations(Authentication auth) {
-        Long userId = getUserId(auth);
-        return reservationRepository.findByUserIdAndStatusNot(userId, StatusReservation.CANCELLED);
+    public Page<Reservations> getMyReservations(
+            Authentication auth,
+            ReservationStatusFilter filter,
+            Pageable pageable
+    ) {
+        Long userId = reservationMethods.getUserId(auth);
+
+        var specification = Specification
+                .where(ReservationCustomerSpecifications.belongsToUser(userId));
+
+        // Se o usuário especificar um status (ex.: CONFIRMED)
+        if (filter.status() != null) {
+            specification = specification.and(
+                    ReservationCustomerSpecifications.hasStatus(filter.status())
+            );
+        } else {
+            // comportamento padrão: NÃO mostrar CANCELLED
+            specification = specification.and(
+                    ReservationCustomerSpecifications.excludeStatus(StatusReservation.CANCELLED)
+            );
+        }
+
+        return reservationRepository.findAll(specification, pageable);
     }
 
 
@@ -61,7 +61,7 @@ public class ReservationUserService {
     // ===============================
     public Reservations createMyReservation(Reservations reservation, Authentication auth) {
 
-        Long userId = getUserId(auth);
+        Long userId = reservationMethods.getUserId(auth);
         reservation.setUserId(userId); // garante que sempre será do usuário logado
 
         LocalDateTime dateTime = reservation.getReservationDateTime();
@@ -101,9 +101,9 @@ public class ReservationUserService {
     // CONFIRMAR MINHA RESERVA
     // ===============================
     public Reservations confirmMyReservation(Long id, Authentication auth) {
-        Long userId = getUserId(auth);
+        Long userId = reservationMethods.getUserId(auth);
 
-        Reservations reservation = getReservationOwnedByUser(id, userId);
+        Reservations reservation = reservationMethods.getReservationOwnedByUser(id, userId);
 
         reservationMethods.validateTableAvailability(
                 reservation.getTableId(),
@@ -122,9 +122,9 @@ public class ReservationUserService {
     // CANCELAR MINHA RESERVA
     // ===============================
     public void cancelMyReservation(Long id, Authentication auth) {
-        Long userId = getUserId(auth);
+        Long userId = reservationMethods.getUserId(auth);
 
-        Reservations reservation = getReservationOwnedByUser(id, userId);
+        Reservations reservation = reservationMethods.getReservationOwnedByUser(id, userId);
 
         reservationMethods.setTableAvailability(reservation.getTableId(), true);
 
@@ -137,9 +137,9 @@ public class ReservationUserService {
     // ATUALIZAR MINHA RESERVA
     // ===============================
     public Reservations updateMyReservation(Long id, Reservations data, Authentication auth) {
-        Long userId = getUserId(auth);
+        Long userId = reservationMethods.getUserId(auth);
 
-        Reservations reservation = getReservationOwnedByUser(id, userId);
+        Reservations reservation = reservationMethods.getReservationOwnedByUser(id, userId);
 
         // Permitir atualizar apenas data/hora/mesa/pessoas
         if (data.getReservationDateTime() != null) {

@@ -1,25 +1,32 @@
 package br.com.fiap.reserva_Sovrano.controller.Reservation;
 
+import br.com.fiap.reserva_Sovrano.components.StatusReservation;
 import br.com.fiap.reserva_Sovrano.model.Reservations;
-import br.com.fiap.reserva_Sovrano.service.Reservation.ReservationUserService;
+import br.com.fiap.reserva_Sovrano.service.Reservation.ReservationCustomerService;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
 @RequestMapping("/reservations/me")
-public class ReservationUserController {
+public class ReservationCustomerController {
 
     @Autowired
-    private ReservationUserService userService;
+    private ReservationCustomerService userService;
+
+    public record ReservationStatusFilter(StatusReservation status) {}
 
     @GetMapping
-    public ResponseEntity<List<Reservations>> getMyReservations(Authentication auth) {
-        return ResponseEntity.ok(userService.getMyReservations(auth));
+    public ResponseEntity<?> getMyReservations(
+            Authentication auth,
+            ReservationStatusFilter filter,
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(userService.getMyReservations(auth, filter, pageable));
     }
 
     @PostMapping

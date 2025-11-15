@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import br.com.fiap.reserva_Sovrano.components.StatusReservation;
@@ -11,6 +12,7 @@ import br.com.fiap.reserva_Sovrano.model.Reservations;
 import br.com.fiap.reserva_Sovrano.model.Tables;
 import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
 import br.com.fiap.reserva_Sovrano.repository.TableRepository;
+import br.com.fiap.reserva_Sovrano.repository.UserRepository;
 
 
 @Component
@@ -20,6 +22,9 @@ public class ReservationUtils {
 
     @Autowired
     private TableRepository tableRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
 
     public Reservations getReservation(Long id){
@@ -91,6 +96,22 @@ public class ReservationUtils {
                 throw new IllegalArgumentException("Horário inválido. Funcionamos 11h–15h e 19h–23h.");
             }
         }
+    }
+
+
+    public Long getUserId(Authentication auth) {
+        return userRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"))
+                .getId();
+    }
+
+    public Reservations getReservationOwnedByUser(Long id, Long userId) {
+        Reservations r = getReservation(id);
+
+        if (!r.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Você não pode alterar uma reserva de outro usuário");
+        }
+        return r;
     }
     
 }
