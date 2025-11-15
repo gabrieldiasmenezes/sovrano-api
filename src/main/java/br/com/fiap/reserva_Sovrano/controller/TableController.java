@@ -27,8 +27,8 @@ public class TableController {
         return ResponseEntity.ok(tableService.create(table));
     }
 
-    @PutMapping("/{id}/availability")
-    public ResponseEntity<Tables> updateAvailability(@PathVariable Long id, @RequestParam Tables table) {
+    @PutMapping("/{id}")
+    public ResponseEntity<Tables> updateAvailability( @Valid @PathVariable Long id, @RequestBody Tables table) {
         return ResponseEntity.ok(tableService.update(id, table));
     }
 
