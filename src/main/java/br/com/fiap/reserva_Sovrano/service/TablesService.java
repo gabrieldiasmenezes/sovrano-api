@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.fiap.reserva_Sovrano.model.Tables;
 import br.com.fiap.reserva_Sovrano.repository.TableRepository;
+import br.com.fiap.reserva_Sovrano.utils.GlobalUtils;
 
 @Service
 public class TablesService {
@@ -19,8 +20,7 @@ public class TablesService {
     }
 
     public Tables findById(Long id){
-        return tableRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Table not found."));
+        return GlobalUtils.getOrThrow(tableRepository.findById(id),"Table not found.");
     }
 
     public Tables create(Tables table){
@@ -34,9 +34,9 @@ public class TablesService {
     }
 
     public void delete(Long id) {
-        if (!tableRepository.existsById(id)) {
-            throw new IllegalArgumentException("Table not found.");
-        }
+        GlobalUtils.check(!tableRepository.existsById(id),
+            "Table not found."
+        );
         tableRepository.deleteById(id);
     }
     

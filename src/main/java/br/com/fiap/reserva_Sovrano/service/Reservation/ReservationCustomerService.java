@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import br.com.fiap.reserva_Sovrano.components.StatusReservation;
 import br.com.fiap.reserva_Sovrano.controller.Reservation.ReservationCustomerController.ReservationStatusFilter;
 import br.com.fiap.reserva_Sovrano.model.Reservations;
-import br.com.fiap.reserva_Sovrano.model.Tables;
 import br.com.fiap.reserva_Sovrano.model.dto.ReservationResponseDTO;
 import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
 import br.com.fiap.reserva_Sovrano.specifications.ReservationCustomerSpecifications;
@@ -32,9 +31,9 @@ public class ReservationCustomerService {
     private ReservationValidate reservationValidate;
 
 
-    // ===============================
+    // =======================================================
     // LISTAR MINHAS RESERVAS
-    // ===============================
+    // =======================================================
     public Page<ReservationResponseDTO> getMyReservations(
             Authentication auth,
             ReservationStatusFilter filter,
@@ -45,58 +44,44 @@ public class ReservationCustomerService {
         var specification = Specification
                 .where(ReservationCustomerSpecifications.belongsToUser(userId));
 
-        // Se o usuário especificar um status (ex.: CONFIRMED)
         if (filter.status() != null) {
             specification = specification.and(
                     ReservationCustomerSpecifications.hasStatus(filter.status())
             );
         } else {
-            // comportamento padrão: NÃO mostrar CANCELLED
             specification = specification.and(
                     ReservationCustomerSpecifications.excludeStatus(StatusReservation.CANCELLED)
             );
         }
 
-        return reservationRepository.findAll(specification, pageable).map(reservationUtils :: toDTO);
+        return reservationRepository.findAll(specification, pageable)
+                .map(reservationUtils::toDTO);
     }
 
 
-    // ===============================
+
+    // =======================================================
     // CRIAR MINHA RESERVA
-    // ===============================
+    // =======================================================
     public Reservations createMyReservation(Reservations reservation, Authentication auth) {
 
         Long userId = reservationUtils.getUserId(auth);
-        reservation.setUserId(userId); // garante que sempre será do usuário logado
+        reservation.setUserId(userId);
 
         LocalDateTime dateTime = reservation.getReservationDateTime();
 
-        if (dateTime.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("A reserva precisa ser feita para uma data futura.");
-        }
-
-        reservationValidate.validateUserPeriodLimit(userId, dateTime);
-        Tables table = reservationUtils.getTable(reservation.getTableId());
-
-        if (reservation.getPeopleCount() > table.getCapacity()) {
-            throw new IllegalStateException(
-                    "A mesa selecionada suporta apenas " + table.getCapacity() +
-                    " pessoas."
-            );
-        }
-
-        reservationValidate.validateAvailableTablesForPeople(
+        // 🔹 Validações globais (data futura, blackout, horários, capacidade, mesa vaga...)
+        reservationValidate.validateCreateOrUpdate(
                 reservation.getPeopleCount(),
+                reservation.getTableId(),
                 dateTime
         );
 
-        reservationValidate.validateTableAvailability(
-                table.getId(),
-                dateTime
-        );
+        // 🔹 Limite de uma reserva por período no dia
+        reservationValidate.validateUserPeriodLimit(userId, dateTime);
 
-        // 5. validar limite de no-shows do usuário
-        reservationValidate.validateNoShowLimit(reservation.getUserId());
+        // 🔹 Verificação de no-show
+        reservationValidate.validateNoShowLimit(userId);
 
         reservation.setStatus(StatusReservation.PENDING);
 
@@ -104,19 +89,24 @@ public class ReservationCustomerService {
     }
 
 
-    // ===============================
+
+    // =======================================================
     // CONFIRMAR MINHA RESERVA
-    // ===============================
+    // =======================================================
     public Reservations confirmMyReservation(Long id, Authentication auth) {
+
         Long userId = reservationUtils.getUserId(auth);
 
-        Reservations reservation = reservationUtils.getReservationOwnedByUser(id, userId);
+        Reservations reservation =
+                reservationUtils.getReservationOwnedByUser(id, userId);
 
+        // Verifica se a mesa ainda está livre para esse horário
         reservationValidate.validateTableAvailability(
                 reservation.getTableId(),
                 reservation.getReservationDateTime()
         );
 
+        // Mesa agora fica como ocupada
         reservationUtils.setTableAvailability(reservation.getTableId(), false);
 
         reservation.setStatus(StatusReservation.CONFIRMED);
@@ -125,51 +115,66 @@ public class ReservationCustomerService {
     }
 
 
-    // ===============================
+
+    // =======================================================
     // CANCELAR MINHA RESERVA
-    // ===============================
+    // =======================================================
     public void cancelMyReservation(Long id, Authentication auth) {
         Long userId = reservationUtils.getUserId(auth);
 
-        Reservations reservation = reservationUtils.getReservationOwnedByUser(id, userId);
+        Reservations reservation =
+                reservationUtils.getReservationOwnedByUser(id, userId);
 
+        // Libera a mesa
         reservationUtils.setTableAvailability(reservation.getTableId(), true);
 
         reservation.setStatus(StatusReservation.CANCELLED);
+
         reservationRepository.save(reservation);
     }
 
 
-    // ===============================
+
+    // =======================================================
     // ATUALIZAR MINHA RESERVA
-    // ===============================
+    // =======================================================
     public Reservations updateMyReservation(Long id, Reservations data, Authentication auth) {
+
         Long userId = reservationUtils.getUserId(auth);
 
-        Reservations reservation = reservationUtils.getReservationOwnedByUser(id, userId);
+        Reservations reservation =
+                reservationUtils.getReservationOwnedByUser(id, userId);
 
-        // Permitir atualizar apenas data/hora/mesa/pessoas
-        if (data.getReservationDateTime() != null) {
+        LocalDateTime newDateTime = data.getReservationDateTime();
+        Integer newPeopleCount = data.getPeopleCount();
+        Long newTableId = data.getTableId();
 
-            LocalDateTime dateTime = data.getReservationDateTime();
+        // 🔹 Atualização de data/hora/mesa/pessoas → validar tudo
+        if (newDateTime != null || newPeopleCount != null || newTableId != null) {
 
-            if (dateTime.isBefore(LocalDateTime.now())) {
-                throw new IllegalArgumentException("A reserva precisa ser feita para uma data futura.");
-            }
+            LocalDateTime finalDateTime =
+                    newDateTime != null ? newDateTime : reservation.getReservationDateTime();
 
-            reservationValidate.validateRestaurantHours(dateTime);
-            reservationValidate.validateAvailableTablesForPeople(data.getPeopleCount(), dateTime);
-            reservationValidate.validateTableAvailability(reservation.getTableId(), dateTime);
+            Integer finalPeopleCount =
+                    newPeopleCount != null ? newPeopleCount : reservation.getPeopleCount();
 
-            reservation.setReservationDateTime(dateTime);
-        }
+            Long finalTableId =
+                    newTableId != null ? newTableId : reservation.getTableId();
 
-        if (data.getPeopleCount() != null) {
-            reservation.setPeopleCount(data.getPeopleCount());
-        }
+            // Valida tudo de uma vez
+            reservationValidate.validateCreateOrUpdate(
+                    finalPeopleCount,
+                    finalTableId,
+                    finalDateTime
+            );
 
-        if (data.getTableId() != null) {
-            reservation.setTableId(data.getTableId());
+            // Limite de período
+            reservationValidate.validateUserPeriodLimit(userId, finalDateTime);
+
+            // Aplicar mudanças
+            reservation.setReservationDateTime(finalDateTime);
+            reservation.setPeopleCount(finalPeopleCount);
+            reservation.setTableId(finalTableId);
         }
 
         return reservationRepository.save(reservation);

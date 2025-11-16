@@ -10,9 +10,9 @@ import br.com.fiap.reserva_Sovrano.components.StatusReservation;
 import br.com.fiap.reserva_Sovrano.model.Reservations;
 import br.com.fiap.reserva_Sovrano.model.Tables;
 import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
+import br.com.fiap.reserva_Sovrano.utils.GlobalUtils;
 import br.com.fiap.reserva_Sovrano.utils.ReservationUtils;
 import br.com.fiap.reserva_Sovrano.utils.ReservationValidate;
-
 
 @Service
 public class ReservationService {
@@ -27,7 +27,9 @@ public class ReservationService {
     private ReservationValidate reservationValidate;
 
 
-
+    // ============================================================
+    // LISTAGENS
+    // ============================================================
     public List<Reservations> listAll() {
         return reservationRepository.findAll();
     }
@@ -40,102 +42,103 @@ public class ReservationService {
         return reservationRepository.findByTableId(tableId);
     }
 
+
+    // ============================================================
+    // CRIAR RESERVA
+    // ============================================================
     public Reservations create(Reservations reservation) {
+
         LocalDateTime dateTime = reservation.getReservationDateTime();
 
-        if (dateTime.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("A reserva precisa ser feita para uma data futura.");
-        }
-
-        // 1. validar horário do restaurante
+        // Validações centralizadas
+        reservationValidate.validateDateTimeRules(dateTime);
         reservationValidate.validateUserPeriodLimit(reservation.getUserId(), dateTime);
 
-        // 2. validar capacidade da mesa escolhida
         Tables table = reservationUtils.getTable(reservation.getTableId());
-        if (reservation.getPeopleCount() > table.getCapacity()) {
-            throw new IllegalStateException(
-                    "A mesa selecionada suporta apenas " + table.getCapacity() + 
-                    " pessoas. Selecione outra mesa."
-            );
-        }
 
-        // 3. validar se existe mesa compatível disponível no horário
-        reservationValidate.validateAvailableTablesForPeople(
-                reservation.getPeopleCount(),
-                dateTime
-        );
-
-        // 4. validar se aquela mesa específica está livre
+        reservationValidate.validateTableCapacity(table, reservation.getPeopleCount());
+        reservationValidate.validateAvailableTablesForPeople(reservation.getPeopleCount(), dateTime);
         reservationValidate.validateTableAvailability(table.getId(), dateTime);
-
-        // 5. validar limite de no-shows do usuário
         reservationValidate.validateNoShowLimit(reservation.getUserId());
 
         reservation.setStatus(StatusReservation.PENDING);
+
         return reservationRepository.save(reservation);
     }
 
 
+    // ============================================================
+    // CONFIRMAR
+    // ============================================================
     public Reservations confirm(Long id) {
-        Reservations reservation=reservationUtils.getReservation(id);
+        Reservations reservation = reservationUtils.getReservation(id);
 
-        reservationValidate.validateTableAvailability(reservation.getTableId(), reservation.getReservationDateTime());
-        
+        reservationValidate.validateTableAvailability(
+            reservation.getTableId(),
+            reservation.getReservationDateTime()
+        );
 
         reservationUtils.setTableAvailability(reservation.getTableId(), false);
-  
+
         reservation.setStatus(StatusReservation.CONFIRMED);
         return reservationRepository.save(reservation);
     }
 
+
+    // ============================================================
+    // CANCELAR
+    // ============================================================
     public void cancel(Long id) {
-        Reservations reservation=reservationUtils.getReservation(id);
-        
+        Reservations reservation = reservationUtils.getReservation(id);
+
         reservationUtils.setTableAvailability(reservation.getTableId(), true);
 
         reservation.setStatus(StatusReservation.CANCELLED);
         reservationRepository.save(reservation);
     }
 
+
+    // ============================================================
+    // FINALIZAR
+    // ============================================================
     public Reservations completeReservation(Long id) {
-        Reservations res = reservationUtils.getReservation(id);
+        Reservations reservation = reservationUtils.getReservation(id);
 
-        if (res.getStatus() != StatusReservation.CONFIRMED) {
-            throw new IllegalStateException("Só é possível finalizar reservas confirmadas.");
-        }
+        GlobalUtils.check(
+            reservation.getStatus() != StatusReservation.CONFIRMED,
+            "Só é possível finalizar reservas confirmadas."
+        );
 
-        reservationUtils.setTableAvailability(res.getTableId(), true);
-        res.setStatus(StatusReservation.COMPLETED);
-        return reservationRepository.save(res);
+        reservationUtils.setTableAvailability(reservation.getTableId(), true);
+
+        reservation.setStatus(StatusReservation.COMPLETED);
+        return reservationRepository.save(reservation);
     }
 
+
+    // ============================================================
+    // ATUALIZAR
+    // ============================================================
     public Reservations update(Long id, Reservations data) {
 
         Reservations reservation = reservationUtils.getReservation(id);
 
-        // Atualizar data/hora
         if (data.getReservationDateTime() != null) {
 
-            LocalDateTime dateTime = data.getReservationDateTime();
+            LocalDateTime newDateTime = data.getReservationDateTime();
 
-            if (dateTime.isBefore(LocalDateTime.now())) {
-                throw new IllegalArgumentException("A reserva precisa ser feita para uma data futura.");
-            }
+            reservationValidate.validateDateTimeRules(newDateTime);
+            reservationValidate.validateUserPeriodLimit(reservation.getUserId(), newDateTime);
+            reservationValidate.validateAvailableTablesForPeople(data.getPeopleCount(), newDateTime);
+            reservationValidate.validateTableAvailability(data.getTableId(), newDateTime);
 
-            reservationValidate.validateRestaurantHours(dateTime);
-            reservationValidate.validateUserPeriodLimit(reservation.getUserId(), dateTime);
-            reservationValidate.validateAvailableTablesForPeople(data.getPeopleCount(), dateTime);
-            reservationValidate.validateTableAvailability(data.getTableId(), dateTime);
-
-            reservation.setReservationDateTime(dateTime);
+            reservation.setReservationDateTime(newDateTime);
         }
 
-        // Atualizar quantidade de pessoas
         if (data.getPeopleCount() != null) {
             reservation.setPeopleCount(data.getPeopleCount());
         }
 
-        // Atualizar mesa
         if (data.getTableId() != null) {
             reservation.setTableId(data.getTableId());
         }
@@ -143,13 +146,16 @@ public class ReservationService {
         return reservationRepository.save(reservation);
     }
 
+
+    // ============================================================
+    // DELETAR
+    // ============================================================
     public void delete(Long id) {
-        if(!reservationRepository.existsById(id)) {
-            throw new IllegalArgumentException("Reservation not found.");
-        }
+        GlobalUtils.check(
+            !reservationRepository.existsById(id),
+            "Reserva não encontrada."
+        );
+
         reservationRepository.deleteById(id);
     }
-
-    
 }
-

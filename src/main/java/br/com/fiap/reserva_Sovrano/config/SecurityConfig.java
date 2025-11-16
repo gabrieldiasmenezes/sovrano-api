@@ -39,20 +39,25 @@ public class SecurityConfig {
                 // ------------------------------------
                 // O usuário só acessa o próprio perfil
                 .requestMatchers("/users/me/**").authenticated()
-
-                .requestMatchers("users/{id}/unblock").hasRole("ADMIN")
-
+   
                 // O usuário só acessa **suas** reservas
                 .requestMatchers("/reservations/me/**").hasRole("CUSTOMER")
 
                 // ------------------------------------
                 // ADMIN ROUTES
                 // ------------------------------------
+
+                // Admin pode bloquear/desbloquear usuários
+                .requestMatchers("users/{id}/unblock").hasRole("ADMIN")
+
                 // Admin pode ver todas as reservas
                 .requestMatchers("/reservations/**").hasRole("ADMIN")
 
                 // Admin controla mesas
                 .requestMatchers("/tables/**").hasRole("ADMIN")
+
+                // Admin controla blackout times
+                .requestMatchers("/blackouts/**").hasRole("ADMIN")
 
                 // Admin pode acessar qualquer outro endpoint
                 .anyRequest().hasRole("ADMIN")
