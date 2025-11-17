@@ -106,9 +106,6 @@ public class ReservationCustomerService {
                 reservation.getReservationDateTime()
         );
 
-        // Mesa agora fica como ocupada
-        reservationUtils.setTableAvailability(reservation.getTableId(), false);
-
         reservation.setStatus(StatusReservation.CONFIRMED);
 
         return reservationRepository.save(reservation);
@@ -122,11 +119,7 @@ public class ReservationCustomerService {
     public void cancelMyReservation(Long id, Authentication auth) {
         Long userId = reservationUtils.getUserId(auth);
 
-        Reservations reservation =
-                reservationUtils.getReservationOwnedByUser(id, userId);
-
-        // Libera a mesa
-        reservationUtils.setTableAvailability(reservation.getTableId(), true);
+        Reservations reservation =reservationUtils.getReservationOwnedByUser(id, userId);
 
         reservation.setStatus(StatusReservation.CANCELLED);
 

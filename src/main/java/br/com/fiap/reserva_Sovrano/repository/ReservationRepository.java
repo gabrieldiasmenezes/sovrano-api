@@ -36,6 +36,12 @@ public interface ReservationRepository extends JpaRepository<Reservations, Long>
         List<StatusReservation> statuses
     );
 
+    boolean existsByTableIdAndReservationDateTimeBetween(
+        Long tableId,
+        LocalDateTime start,
+        LocalDateTime end
+    );
+
     // Contar reservas do usuário com status NO_SHOW
     long countByUserIdAndStatus(Long userId, StatusReservation status);
 

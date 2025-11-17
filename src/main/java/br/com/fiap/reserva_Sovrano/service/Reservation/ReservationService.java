@@ -78,8 +78,6 @@ public class ReservationService {
             reservation.getReservationDateTime()
         );
 
-        reservationUtils.setTableAvailability(reservation.getTableId(), false);
-
         reservation.setStatus(StatusReservation.CONFIRMED);
         return reservationRepository.save(reservation);
     }
@@ -91,7 +89,6 @@ public class ReservationService {
     public void cancel(Long id) {
         Reservations reservation = reservationUtils.getReservation(id);
 
-        reservationUtils.setTableAvailability(reservation.getTableId(), true);
 
         reservation.setStatus(StatusReservation.CANCELLED);
         reservationRepository.save(reservation);
@@ -108,8 +105,6 @@ public class ReservationService {
             reservation.getStatus() != StatusReservation.CONFIRMED,
             "Só é possível finalizar reservas confirmadas."
         );
-
-        reservationUtils.setTableAvailability(reservation.getTableId(), true);
 
         reservation.setStatus(StatusReservation.COMPLETED);
         return reservationRepository.save(reservation);

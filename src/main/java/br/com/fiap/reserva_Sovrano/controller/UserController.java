@@ -27,7 +27,13 @@ public class UserController {
         String email = authentication.getName();
         return userService.findByEmail(email)
                 .map(user -> ResponseEntity.ok(
-                        new UserResponse(user.getName(), user.getEmail(), user.getPhone())
+                        new UserResponse(
+                            user.getName(), 
+                            user.getEmail(), 
+                            user.getPhone(),
+                            user.getPriorityType(),
+                            user.getPriorityReason()
+                            )
                 ))
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -38,7 +44,13 @@ public class UserController {
         String email = authentication.getName();
         Users updatedUser = userService.update(email, user);
         return ResponseEntity.ok(
-                new UserResponse(updatedUser.getName(), updatedUser.getEmail(), updatedUser.getPhone())
+                new UserResponse(
+                    updatedUser.getName(), 
+                    updatedUser.getEmail(), 
+                    updatedUser.getPhone(),
+                    updatedUser.getPriorityType(),
+                    updatedUser.getPriorityReason()
+                    )
         );
     }
 
@@ -55,7 +67,13 @@ public class UserController {
     public ResponseEntity<UserResponse> create(@Valid @RequestBody Users user) {
         Users createdUser = userService.create(user);
         return ResponseEntity.ok(
-                new UserResponse(createdUser.getName(), createdUser.getEmail(), createdUser.getPhone())
+                new UserResponse(
+                    createdUser.getName(), 
+                    createdUser.getEmail(), 
+                    createdUser.getPhone(),
+                    createdUser.getPriorityType(),
+                    createdUser.getPriorityReason()
+                    )
         );
     }
 

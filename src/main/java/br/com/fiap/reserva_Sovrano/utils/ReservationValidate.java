@@ -133,16 +133,15 @@ public class ReservationValidate {
     // =======================================================
     // 6. DISPONIBILIDADE DA MESA ESPECÍFICA
     // =======================================================
-    public void validateTableAvailability(Long tableId, LocalDateTime dateTime) {
-        boolean isOccupied =
-                reservationRepository.existsByTableIdAndReservationDateTimeAndStatus(
-                        tableId,
-                        dateTime,
-                        StatusReservation.CONFIRMED
-                );
+    public void validateTableAvailability(Long tableId, LocalDateTime requested) {
+        boolean hasConflict = reservationRepository.existsByTableIdAndReservationDateTimeBetween(
+                tableId,
+                requested.minusHours(2),    // início da janela (ex: reserva dura 2h)
+                requested.plusHours(2)      // fim da janela
+        );
 
-        GlobalUtils.check(isOccupied,
-                "A mesa já foi reservada para esse horário.");
+        GlobalUtils.check(hasConflict,
+                "A mesa já possui uma reserva neste horário.");
     }
 
 

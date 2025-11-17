@@ -43,6 +43,7 @@ public class SecurityConfig {
                 // O usuário só acessa **suas** reservas
                 .requestMatchers("/reservations/me/**").hasRole("CUSTOMER")
 
+                .requestMatchers("/waitlist/me/**").hasRole("CUSTOMER")
                 // ------------------------------------
                 // ADMIN ROUTES
                 // ------------------------------------
@@ -58,6 +59,8 @@ public class SecurityConfig {
 
                 // Admin controla blackout times
                 .requestMatchers("/blackouts/**").hasRole("ADMIN")
+
+                .requestMatchers("/waitlist/**").hasRole("ADMIN")
 
                 // Admin pode acessar qualquer outro endpoint
                 .anyRequest().hasRole("ADMIN")

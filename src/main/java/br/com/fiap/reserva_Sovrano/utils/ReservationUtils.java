@@ -57,11 +57,6 @@ public class ReservationUtils {
         );
     }
 
-    public void setTableAvailability(Long id, boolean available) {
-        Tables table = getTable(id);
-        table.setAvailable(available);
-        tableRepository.save(table);
-    }
 
     // -------------------------
     // USUÁRIOS

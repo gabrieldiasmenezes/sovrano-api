@@ -12,4 +12,5 @@ import br.com.fiap.reserva_Sovrano.model.Tables;
 public interface TableRepository extends JpaRepository<Tables, Long> {
 
     List<Tables> findByCapacityGreaterThanEqual(Integer capacity);
+    
 }

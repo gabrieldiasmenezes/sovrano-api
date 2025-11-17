@@ -23,6 +23,10 @@ public class Tables {
     @Max(value = 6, message = "Maximum capacity is 6 people.")
     private Integer capacity;
 
-    @NotNull(message = "Availability status must be specified.")
-    private Boolean available;
+    // 👇 ADICIONAR ESTES CAMPOS
+    @NotNull(message = "X coordinate is required.")
+    private Integer posX;
+
+    @NotNull(message = "Y coordinate is required.")
+    private Integer posY;
 }
