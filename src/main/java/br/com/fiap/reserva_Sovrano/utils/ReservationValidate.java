@@ -151,23 +151,42 @@ public class ReservationValidate {
     // =======================================================
     public Period validateRestaurantHours(LocalDateTime dateTime) {
 
-        int day = dateTime.getDayOfWeek().getValue();
+        int day = dateTime.getDayOfWeek().getValue();   // 1 = segunda, 7 = domingo
         int hour = dateTime.getHour();
 
         boolean almoco = hour >= 11 && hour < 15;
         boolean jantar = hour >= 19 && hour < 23;
 
+        // =============================
+        // SEGUNDA-FEIRA → FECHADO
+        // =============================
+        GlobalUtils.check(
+                day == 1,
+                "O restaurante não funciona às segundas-feiras."
+        );
+
+        // =============================
+        // DOMINGO → SOMENTE ALMOÇO
+        // =============================
         if (day == 7) {
-            GlobalUtils.check(!almoco,
-                    "O restaurante só funciona no almoço aos domingos (11h às 15h).");
+            GlobalUtils.check(
+                    !almoco,
+                    "Aos domingos funcionamos apenas no almoço (11h às 15h)."
+            );
             return Period.LUNCH;
         }
 
-        GlobalUtils.check(!almoco && !jantar,
-                "Horário inválido. Funcionamos 11h–15h e 19h–23h de segunda a sábado.");
+        // =============================
+        // TERÇA A SÁBADO
+        // =============================
+        GlobalUtils.check(
+                !almoco && !jantar,
+                "Horário inválido. Funcionamos 11h–15h (almoço) e 19h–23h (jantar) de terça a sábado."
+        );
 
         return almoco ? Period.LUNCH : Period.DINNER;
     }
+
 
 
 
