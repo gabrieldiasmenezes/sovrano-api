@@ -29,40 +29,33 @@ public class SecurityConfig {
             .authorizeHttpRequests()
 
                 // ------------------------------------
-                // PUBLIC
+                // PUBLIC (Somente login + criar user + swagger)
                 // ------------------------------------
                 .requestMatchers("/login/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/users").permitAll()
 
-                // ------------------------------------
-                // CUSTOMER ROUTES (usuário autenticado)
-                // ------------------------------------
-                // O usuário só acessa o próprio perfil
-                .requestMatchers("/users/me/**").authenticated()
-   
-                // O usuário só acessa **suas** reservas
-                .requestMatchers("/reservations/me/**").hasRole("CUSTOMER")
+                // SWAGGER (somente isso público)
+                .requestMatchers("/swagger-ui/**").permitAll()
+                .requestMatchers("/v3/api-docs/**").permitAll()
+                .requestMatchers("/v3/api-docs.yaml").permitAll()
 
+                // ------------------------------------
+                // CUSTOMER ROUTES
+                // ------------------------------------
+                .requestMatchers("/users/me/**").authenticated()
+                .requestMatchers("/reservations/me/**").hasRole("CUSTOMER")
                 .requestMatchers("/waitlist/me/**").hasRole("CUSTOMER")
+
                 // ------------------------------------
                 // ADMIN ROUTES
                 // ------------------------------------
-
-                // Admin pode bloquear/desbloquear usuários
-                .requestMatchers("users/{id}/unblock").hasRole("ADMIN")
-
-                // Admin pode ver todas as reservas
+                .requestMatchers("/users/{id}/unblock").hasRole("ADMIN")
                 .requestMatchers("/reservations/**").hasRole("ADMIN")
-
-                // Admin controla mesas
                 .requestMatchers("/tables/**").hasRole("ADMIN")
-
-                // Admin controla blackout times
                 .requestMatchers("/blackouts/**").hasRole("ADMIN")
-
                 .requestMatchers("/waitlist/**").hasRole("ADMIN")
 
-                // Admin pode acessar qualquer outro endpoint
+                // Qualquer outra rota → apenas ADMIN
                 .anyRequest().hasRole("ADMIN")
 
             .and()
@@ -90,6 +83,3 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
-
-
-
