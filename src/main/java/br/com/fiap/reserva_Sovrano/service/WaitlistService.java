@@ -9,12 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import br.com.fiap.reserva_Sovrano.components.Period;
+import br.com.fiap.reserva_Sovrano.components.PriorityType;
 import br.com.fiap.reserva_Sovrano.components.WaitlistStatus;
 import br.com.fiap.reserva_Sovrano.model.Users;
 import br.com.fiap.reserva_Sovrano.model.Waitlist;
 import br.com.fiap.reserva_Sovrano.model.dto.MyWaitlistDTO;
 import br.com.fiap.reserva_Sovrano.repository.UserRepository;
 import br.com.fiap.reserva_Sovrano.repository.WaitlistRepository;
+import br.com.fiap.reserva_Sovrano.utils.GlobalUtils;
 import br.com.fiap.reserva_Sovrano.utils.WaitlistUtils;
 
 @Service
@@ -29,10 +31,13 @@ public class WaitlistService {
     @Autowired
     private WaitlistUtils waitlistUtils;
 
+    @Autowired
+    private GlobalUtils globalUtils;
+
     // -----------------------------------------------------------
     // ADICIONAR À FILA
     // -----------------------------------------------------------
-    public Waitlist joinWaitlist(Long userId, int peopleCount, Period period) {
+    public Waitlist joinWaitlist(Long userId, int peopleCount, Period period,boolean hasLegalPriority, String legalReason) {
 
         LocalDate today = LocalDate.now();
 
@@ -42,6 +47,8 @@ public class WaitlistService {
                     throw new RuntimeException("Você já está na fila de espera para este período.");
                 });
 
+        globalUtils.validateLegalPriority(hasLegalPriority, legalReason);
+
         Waitlist entry = Waitlist.builder()
                 .userId(userId)
                 .peopleCount(peopleCount)
@@ -49,6 +56,8 @@ public class WaitlistService {
                 .period(period)
                 .createdAt(LocalDateTime.now())
                 .status(WaitlistStatus.WAITING)
+                .hasLegalPriority(hasLegalPriority)
+                .legalPriorityReason(hasLegalPriority ? legalReason : null)
                 .build();
 
         return waitlistRepository.save(entry);
@@ -157,18 +166,26 @@ public class WaitlistService {
 
     // -----------------------------------------------------------
     // ORDENAR POR PRIORIDADE
-    // ordenação por prioridade (substitui a versão anterior)
     private List<Waitlist> orderWaitlist(List<Waitlist> list) {
         return list.stream()
             .sorted((a, b) -> {
+
                 Users ua = userRepository.findById(a.getUserId()).orElse(null);
                 Users ub = userRepository.findById(b.getUserId()).orElse(null);
 
-                int pa = ua != null && ua.getPriorityType() != null ? ua.getPriorityType().getOrder() : Integer.MAX_VALUE;
-                int pb = ub != null && ub.getPriorityType() != null ? ub.getPriorityType().getOrder() : Integer.MAX_VALUE;
+                // 1️⃣ PRIORIDADE LEGAL → maior prioridade absoluta
+                int la = a.isHasLegalPriority() ? 0 : 1;
+                int lb = b.isHasLegalPriority() ? 0 : 1;
 
-                if (pa != pb) return Integer.compare(pa, pb);
+                if (la != lb) return Integer.compare(la, lb);
 
+                // 2️⃣ VIP (se não tiver prioridade legal)
+                int va = ua != null ? ua.getVipLevel().getOrder() : PriorityType.NONE.getOrder();
+                int vb = ub != null ? ub.getVipLevel().getOrder() : PriorityType.NONE.getOrder();
+
+                if (va != vb) return Integer.compare(va, vb);
+
+                // 3️⃣ createdAt
                 return a.getCreatedAt().compareTo(b.getCreatedAt());
             })
             .toList();

@@ -13,11 +13,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class ReservationResponseDTO {
-
     private Long id;
     private LocalDateTime reservationDateTime;
     private Integer peopleCount;
     private StatusReservation status;
-    private String userEmail;  
+    private String userEmail; 
     private Long tableId;
 }

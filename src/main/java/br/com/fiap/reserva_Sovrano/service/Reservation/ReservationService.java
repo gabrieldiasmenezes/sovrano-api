@@ -61,6 +61,10 @@ public class ReservationService {
         reservationValidate.validateTableAvailability(table.getId(), dateTime);
         reservationValidate.validateNoShowLimit(reservation.getUserId());
 
+        if (!reservation.isHasLegalPriority()) {
+            reservation.setLegalPriorityReason(null);
+        }
+
         reservation.setStatus(StatusReservation.PENDING);
 
         return reservationRepository.save(reservation);

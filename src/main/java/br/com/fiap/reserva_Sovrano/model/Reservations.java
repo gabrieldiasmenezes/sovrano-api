@@ -36,4 +36,8 @@ public class Reservations {
 
     @NotNull(message = "Table ID is required.")
     private Long tableId;
+
+    private boolean hasLegalPriority;  // se no grupo tem idoso/gestante/pcd
+    
+    private String legalPriorityReason; // motivo opcional
 }

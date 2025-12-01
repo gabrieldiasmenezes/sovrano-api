@@ -42,4 +42,7 @@ public class Waitlist {
 
     @Enumerated(EnumType.STRING)
     private WaitlistStatus status; // WAITING, NOTIFIED, EXPIRED
+
+    private boolean hasLegalPriority;
+    private String legalPriorityReason;
 }

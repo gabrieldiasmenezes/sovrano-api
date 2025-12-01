@@ -49,8 +49,7 @@ public class UserController {
                             user.getName(),
                             user.getEmail(),
                             user.getPhone(),
-                            user.getPriorityType(),
-                            user.getPriorityReason()
+                            user.getVipLevel()
                         )
                 ))
                 .orElse(ResponseEntity.notFound().build());
@@ -82,8 +81,7 @@ public class UserController {
                     updatedUser.getName(),
                     updatedUser.getEmail(),
                     updatedUser.getPhone(),
-                    updatedUser.getPriorityType(),
-                    updatedUser.getPriorityReason()
+                    updatedUser.getVipLevel()
                 )
         );
     }
@@ -127,8 +125,7 @@ public class UserController {
                     createdUser.getName(),
                     createdUser.getEmail(),
                     createdUser.getPhone(),
-                    createdUser.getPriorityType(),
-                    createdUser.getPriorityReason()
+                    createdUser.getVipLevel()
                 )
         );
     }

@@ -6,7 +6,6 @@ public record UserResponse(
     String name, 
     String email,
     String phone,
-    PriorityType priorityType,
-    String priorityReason
+    PriorityType vipLevel
      
 ) {}

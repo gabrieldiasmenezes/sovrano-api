@@ -38,7 +38,7 @@ public class UserService {
 
         initializeUserFields(user);
         user.setVisitsCount(0);
-        user.setPriorityType(user.getPriorityType() == PriorityType.LEGAL ? PriorityType.LEGAL : PriorityType.NONE);
+        user.setVipLevel(user.getVipLevel() == PriorityType.LEGAL ? PriorityType.LEGAL : PriorityType.NONE);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
@@ -52,8 +52,8 @@ public class UserService {
         user.setPhotoUrl(updated.getPhotoUrl());
 
         // Prioridade legal informada pelo usuário
-        if (updated.getPriorityType() == PriorityType.LEGAL) {
-            user.setPriorityType(PriorityType.LEGAL);
+        if (updated.getVipLevel() == PriorityType.LEGAL) {
+            user.setVipLevel(PriorityType.LEGAL);
             user.setPriorityReason(updated.getPriorityReason());
         }
 
@@ -80,13 +80,13 @@ public class UserService {
 
     private void updateVipLevel(Users user) {
         if (user.getVisitsCount() >= 8) {
-            user.setPriorityType(PriorityType.VIP_3);
+            user.setVipLevel(PriorityType.VIP_3);
         } else if (user.getVisitsCount() >= 5) {
-            user.setPriorityType(PriorityType.VIP_2);
+            user.setVipLevel(PriorityType.VIP_2);
         } else if (user.getVisitsCount() >= 3) {
-            user.setPriorityType(PriorityType.VIP_1);
-        } else if (user.getPriorityType() != PriorityType.LEGAL) {
-            user.setPriorityType(PriorityType.NONE);
+            user.setVipLevel(PriorityType.VIP_1);
+        } else if (user.getVipLevel() != PriorityType.LEGAL) {
+            user.setVipLevel(PriorityType.NONE);
         }
     }
 }

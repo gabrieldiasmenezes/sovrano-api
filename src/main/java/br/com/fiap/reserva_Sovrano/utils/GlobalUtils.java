@@ -16,5 +16,12 @@ public class GlobalUtils {
             throw new IllegalArgumentException(message);
         }
     }
+
+    public void validateLegalPriority(boolean hasPriority, String reason) {
+        if (hasPriority) {
+            GlobalUtils.check(reason == null || reason.isBlank(),
+                "Você deve informar o motivo da prioridade (idoso, gestante ou PCD).");
+        }
+    }
     
 }

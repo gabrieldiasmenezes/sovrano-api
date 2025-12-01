@@ -7,10 +7,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import br.com.fiap.reserva_Sovrano.components.Period;
+import br.com.fiap.reserva_Sovrano.model.dto.JoinWaitlistRequest;
 import br.com.fiap.reserva_Sovrano.service.WaitlistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/waitlist")
@@ -26,16 +28,18 @@ public class WaitlistController {
         description = "Coloca o cliente na fila de espera informando o userId, número de pessoas e período (ALMOÇO ou JANTAR)."
     )
     @PostMapping("/join")
-    public ResponseEntity<?> join(
-            @RequestParam Long userId,
-            @RequestParam int peopleCount,
-            @RequestParam Period period
-    ) {
+    public ResponseEntity<?> join(@RequestBody @Valid JoinWaitlistRequest r) {
         return ResponseEntity.ok(
-                waitlistService.joinWaitlist(userId, peopleCount, period)
+            waitlistService.joinWaitlist(
+                r.userId(),
+                r.peopleCount(),
+                r.period(),
+                r.hasLegalPriority(),
+                r.legalReason()
+            )
         );
     }
-
+    
     @Operation(
         summary = "Admin - visualizar lista de espera",
         description = "Retorna todos os clientes em lista de espera de acordo com a data e período selecionados."

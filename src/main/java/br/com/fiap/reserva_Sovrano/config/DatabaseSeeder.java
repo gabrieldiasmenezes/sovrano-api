@@ -215,7 +215,7 @@ public class DatabaseSeeder {
                                 .phone(phone)
                                 .password(passwordEncoder.encode(password))
                                 .role(role)
-                                .priorityType(priorityType)
+                                .vipLevel(priorityType)
                                 .priorityReason(priorityType == PriorityType.LEGAL ? "Informada pelo usuário" : null)
                                 .visitsCount(visitsCount)
                                 .noShowCount(0)

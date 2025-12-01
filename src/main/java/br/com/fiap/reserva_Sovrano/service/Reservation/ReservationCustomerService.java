@@ -82,6 +82,10 @@ public class ReservationCustomerService {
 
         // 🔹 Verificação de no-show
         reservationValidate.validateNoShowLimit(userId);
+        
+        if (!reservation.isHasLegalPriority()) {
+                reservation.setLegalPriorityReason(null);
+        }
 
         reservation.setStatus(StatusReservation.PENDING);
 
