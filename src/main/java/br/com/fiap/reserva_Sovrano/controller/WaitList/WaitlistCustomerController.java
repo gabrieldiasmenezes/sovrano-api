@@ -51,11 +51,26 @@ public class WaitlistCustomerController {
         String email = auth.getName();
 
         Users user = userService.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
         return ResponseEntity.ok(
                 waitlistService.getMyWaitlists(user.getId())
         );
+    }
+
+    @Operation(
+            summary = "Sair da fila de espera",
+            description = "Permite ao cliente remover sua própria entrada na fila de espera."
+    )
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> leave(@PathVariable Long id, Authentication auth) {
+        String email = auth.getName();
+
+        Users user = userService.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+        waitlistService.leaveWaitlist(id, user.getId());
+        return ResponseEntity.noContent().build();
     }
 
     // ----------------------------------------------------------
@@ -73,12 +88,13 @@ public class WaitlistCustomerController {
     public ResponseEntity<?> getMyPosition(
             Authentication auth,
             @RequestParam Period period,
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
             @RequestParam LocalDate date
     ) {
         String email = auth.getName();
 
         Users user = userService.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
         return ResponseEntity.ok(
                 waitlistService.getUserPosition(user.getId(), period, date)

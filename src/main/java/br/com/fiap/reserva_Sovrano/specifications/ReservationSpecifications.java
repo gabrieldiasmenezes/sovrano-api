@@ -14,6 +14,10 @@ public class ReservationSpecifications {
 
     public static Specification<Reservations> withFilters(ReservationFilter filter) {
         return (root, query, cb) -> {
+            // If filter is null, return a conjunction (no filtering)
+            if (filter == null) {
+                return cb.conjunction();
+            }
 
             List<Predicate> predicates = new ArrayList<>();
 

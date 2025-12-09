@@ -239,7 +239,10 @@ public class ReservationValidate {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
-        if (user.getRole() != UserRole.BLOCK) {
+        // Se o usuário estiver com papel de bloqueado, verificar se o bloqueio ainda está ativo.
+        // Se o bloqueio estiver ativo (blockedUntil após hoje) -> lançar erro.
+        // Caso contrário (bloqueio expirado), restaurar o usuário para CUSTOMER e zerar contadores.
+        if (user.getRole() == UserRole.BLOCK) {
 
             GlobalUtils.check(
                     user.getBlockedUntil() != null &&

@@ -2,6 +2,8 @@ package br.com.fiap.reserva_Sovrano.config;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,8 @@ import jakarta.annotation.PostConstruct;
 @Component
 public class DatabaseSeeder {
 
+        private static final Logger logger = LoggerFactory.getLogger(DatabaseSeeder.class);
+
     @Autowired private UserRepository userRepository;
     @Autowired private TableRepository tableRepository;
     @Autowired private ReservationRepository reservationRepository;
@@ -29,53 +33,36 @@ public class DatabaseSeeder {
     public void init() {
 
         // ============================================
-        // USUÁRIOS
+        // USUÁRIOS (SEM PRIORIDADE — APENAS ROLE)
         // ============================================
         Users admin = createUserIfNotExists(
                 "Admin Sovrano", "admin@sovrano.com", "11900000000",
-                "admin123", UserRole.ADMIN,
-                PriorityType.NONE, 0
+                "admin123", UserRole.ADMIN
         );
 
         Users gabriel = createUserIfNotExists(
                 "Gabriel Dias", "gabriel@sovrano.com", "11999999999",
-                "dias123", UserRole.CUSTOMER,
-                PriorityType.NONE, 0
-        );
-
-        Users idoso = createUserIfNotExists(
-                "João Idoso", "idoso@sovrano.com", "11988887777",
-                "teste123", UserRole.CUSTOMER,
-                PriorityType.LEGAL, 0
-        );
-
-        Users gestante = createUserIfNotExists(
-                "Maria Gestante", "gestante@sovrano.com", "11977776666",
-                "teste123", UserRole.CUSTOMER,
-                PriorityType.LEGAL, 0
+                "dias123", UserRole.CUSTOMER
         );
 
         Users vip3 = createUserIfNotExists(
                 "Cliente VIP 3", "vip3@sovrano.com", "11966665555",
-                "teste123", UserRole.CUSTOMER,
-                PriorityType.VIP_3, 8
+                "teste123", UserRole.CUSTOMER
         );
 
         Users vip1 = createUserIfNotExists(
                 "Cliente VIP 1", "vip1@sovrano.com", "11944443333",
-                "teste123", UserRole.CUSTOMER,
-                PriorityType.VIP_1, 3
+                "teste123", UserRole.CUSTOMER
         );
 
         Users comum = createUserIfNotExists(
                 "Cliente Comum", "comum@sovrano.com", "11922221111",
-                "teste123", UserRole.CUSTOMER,
-                PriorityType.NONE, 0
+                "teste123", UserRole.CUSTOMER
         );
 
 
         // ============================================
-        // MESAS COM POSIÇÃO
+        // MESAS
         // ============================================
         if (tableRepository.count() == 0) {
 
@@ -110,7 +97,7 @@ public class DatabaseSeeder {
 
 
         // ============================================
-        // RESERVAS DE TESTE
+        // RESERVAS DE TESTE — COM PRIORIDADE
         // ============================================
         if (reservationRepository.count() == 0) {
 
@@ -129,6 +116,8 @@ public class DatabaseSeeder {
                         .status(StatusReservation.CONFIRMED)
                         .userId(comum.getId())
                         .tableId(t.getId())
+                        .hasLegalPriority(false)
+                        .legalPriorityReason(null)
                         .build();
 
                 reservationRepository.save(r);
@@ -137,7 +126,7 @@ public class DatabaseSeeder {
 
 
         // ============================================
-        // WAITLIST DE TESTE (ALMOÇO AMANHÃ)
+        // WAITLIST DE TESTE (COM PRIORIDADE)
         // ============================================
         if (waitlistRepository.count() == 0) {
 
@@ -145,32 +134,15 @@ public class DatabaseSeeder {
 
             List<Waitlist> list = List.of(
 
-                    // LEGAL — prioridade máxima
-                    Waitlist.builder()
-                            .userId(gestante.getId())
-                            .peopleCount(2)
-                            .date(date)
-                            .period(Period.LUNCH)
-                            .status(WaitlistStatus.WAITING)
-                            .createdAt(LocalDateTime.now().minusMinutes(30))
-                            .build(),
-
-                    Waitlist.builder()
-                            .userId(idoso.getId())
-                            .peopleCount(3)
-                            .date(date)
-                            .period(Period.LUNCH)
-                            .status(WaitlistStatus.WAITING)
-                            .createdAt(LocalDateTime.now().minusMinutes(20))
-                            .build(),
-
-                    // VIP 3
+                    // VIP 3 (prioridade customizada)
                     Waitlist.builder()
                             .userId(vip3.getId())
                             .peopleCount(4)
                             .date(date)
                             .period(Period.LUNCH)
                             .status(WaitlistStatus.WAITING)
+                            .hasLegalPriority(false)
+                            .legalPriorityReason(null)
                             .createdAt(LocalDateTime.now().minusMinutes(10))
                             .build(),
 
@@ -181,6 +153,8 @@ public class DatabaseSeeder {
                             .date(date)
                             .period(Period.LUNCH)
                             .status(WaitlistStatus.WAITING)
+                            .hasLegalPriority(false)
+                            .legalPriorityReason(null)
                             .createdAt(LocalDateTime.now().minusMinutes(5))
                             .build(),
 
@@ -191,6 +165,8 @@ public class DatabaseSeeder {
                             .date(date)
                             .period(Period.LUNCH)
                             .status(WaitlistStatus.WAITING)
+                            .hasLegalPriority(false)
+                            .legalPriorityReason(null)
                             .createdAt(LocalDateTime.now())
                             .build()
             );
@@ -198,14 +174,13 @@ public class DatabaseSeeder {
             waitlistRepository.saveAll(list);
         }
 
-        System.out.println("✔ Database SEED finalizado com Waitlist baseado no modelo correto.");
+                logger.info("✔ Database SEED finalizado com o novo modelo (legalPriority).");
     }
 
 
     private Users createUserIfNotExists(
             String name, String email, String phone,
-            String password, UserRole role,
-            PriorityType priorityType, int visitsCount
+            String password, UserRole role
     ) {
         return userRepository.findByEmail(email)
                 .orElseGet(() -> userRepository.save(
@@ -215,9 +190,7 @@ public class DatabaseSeeder {
                                 .phone(phone)
                                 .password(passwordEncoder.encode(password))
                                 .role(role)
-                                .vipLevel(priorityType)
-                                .priorityReason(priorityType == PriorityType.LEGAL ? "Informada pelo usuário" : null)
-                                .visitsCount(visitsCount)
+                                .visitsCount(0)
                                 .noShowCount(0)
                                 .blockedUntil(null)
                                 .build()

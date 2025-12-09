@@ -26,6 +26,11 @@ public class ReservationService {
     @Autowired
     private ReservationValidate reservationValidate;
 
+    @Autowired
+    private br.com.fiap.reserva_Sovrano.service.NotificationService notificationService;
+    @Autowired
+    private br.com.fiap.reserva_Sovrano.repository.UserRepository userRepository;
+
 
     // ============================================================
     // LISTAGENS
@@ -52,14 +57,18 @@ public class ReservationService {
 
         // Validações centralizadas
         reservationValidate.validateDateTimeRules(dateTime);
-        reservationValidate.validateUserPeriodLimit(reservation.getUserId(), dateTime);
+        // Se a reserva estiver vinculada a um usuário, aplicar validações específicas de usuário
+        if (reservation.getUserId() != null) {
+            reservationValidate.validateUserPeriodLimit(reservation.getUserId(), dateTime);
+            reservationValidate.validateNoShowLimit(reservation.getUserId());
+        }
 
         Tables table = reservationUtils.getTable(reservation.getTableId());
 
         reservationValidate.validateTableCapacity(table, reservation.getPeopleCount());
         reservationValidate.validateAvailableTablesForPeople(reservation.getPeopleCount(), dateTime);
         reservationValidate.validateTableAvailability(table.getId(), dateTime);
-        reservationValidate.validateNoShowLimit(reservation.getUserId());
+        
 
         if (!reservation.isHasLegalPriority()) {
             reservation.setLegalPriorityReason(null);
@@ -67,7 +76,15 @@ public class ReservationService {
 
         reservation.setStatus(StatusReservation.PENDING);
 
-        return reservationRepository.save(reservation);
+        Reservations saved = reservationRepository.save(reservation);
+
+        // Enviar email de confirmação da criação (se usuário existir)
+        if (saved.getUserId() != null) {
+            var user = userRepository.findById(saved.getUserId()).orElse(null);
+            if (user != null) notificationService.sendReservationCreatedEmail(user, saved);
+        }
+
+        return saved;
     }
 
 
@@ -77,10 +94,16 @@ public class ReservationService {
     public Reservations confirm(Long id) {
         Reservations reservation = reservationUtils.getReservation(id);
 
-        reservationValidate.validateTableAvailability(
-            reservation.getTableId(),
-            reservation.getReservationDateTime()
-        );
+        // When confirming, ignore the current reservation when checking conflicts.
+        var start = reservation.getReservationDateTime().minusHours(2);
+        var end = reservation.getReservationDateTime().plusHours(2);
+
+        boolean conflict = reservationRepository.findByReservationDateTimeBetween(start, end).stream()
+                .anyMatch(r -> !java.util.Objects.equals(r.getId(), id)
+                        && java.util.Objects.equals(r.getTableId(), reservation.getTableId())
+                        && r.getStatus() == StatusReservation.CONFIRMED);
+
+        GlobalUtils.check(conflict, "A mesa já possui uma reserva neste horário.");
 
         reservation.setStatus(StatusReservation.CONFIRMED);
         return reservationRepository.save(reservation);
@@ -127,9 +150,14 @@ public class ReservationService {
             LocalDateTime newDateTime = data.getReservationDateTime();
 
             reservationValidate.validateDateTimeRules(newDateTime);
+
+            // Use final values (if people/table not provided, fall back to current reservation values)
+            Integer finalPeopleCount = data.getPeopleCount() != null ? data.getPeopleCount() : reservation.getPeopleCount();
+            Long finalTableId = data.getTableId() != null ? data.getTableId() : reservation.getTableId();
+
             reservationValidate.validateUserPeriodLimit(reservation.getUserId(), newDateTime);
-            reservationValidate.validateAvailableTablesForPeople(data.getPeopleCount(), newDateTime);
-            reservationValidate.validateTableAvailability(data.getTableId(), newDateTime);
+            reservationValidate.validateAvailableTablesForPeople(finalPeopleCount, newDateTime);
+            reservationValidate.validateTableAvailability(finalTableId, newDateTime);
 
             reservation.setReservationDateTime(newDateTime);
         }

@@ -6,7 +6,6 @@ import br.com.fiap.reserva_Sovrano.repository.ReservationRepository;
 import br.com.fiap.reserva_Sovrano.service.Reservation.ReservationService;
 import br.com.fiap.reserva_Sovrano.specifications.ReservationSpecifications;
 import br.com.fiap.reserva_Sovrano.utils.ReservationUtils;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,8 +36,11 @@ public class ReservationController {
     @Autowired
     private ReservationService reservationService;
 
-    @Autowired
-    private ReservationRepository reservationRepository;
+        @Autowired
+        private ReservationRepository reservationRepository;
+
+        @Autowired
+        private br.com.fiap.reserva_Sovrano.repository.UserRepository userRepository;
 
     @Autowired
     private ReservationUtils reservationUtils;
@@ -72,8 +74,8 @@ public class ReservationController {
             @ApiResponse(responseCode = "401", description = "Não autenticado"),
             @ApiResponse(responseCode = "403", description = "Acesso negado (somente ADMIN)")
     })
-    @GetMapping
-    public Page<ReservationResponseDTO> findAll(ReservationFilter filters, Pageable pageable) {
+        @GetMapping
+        public Page<ReservationResponseDTO> findAll(@org.springframework.web.bind.annotation.ModelAttribute ReservationFilter filters, Pageable pageable) {
         var specification = ReservationSpecifications.withFilters(filters);
         return reservationRepository.findAll(specification, pageable)
             .map(reservationUtils :: toDTO);
@@ -89,10 +91,12 @@ public class ReservationController {
             @ApiResponse(responseCode = "401", description = "Não autenticado"),
             @ApiResponse(responseCode = "403", description = "Acesso negado")
     })
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Reservations>> findByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(reservationService.findByUser(userId));
-    }
+        @GetMapping("/user/{email}")
+        public ResponseEntity<List<Reservations>> findByUser(@PathVariable String email) {
+                var user = userRepository.findByEmail(email)
+                                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+                return ResponseEntity.ok(reservationService.findByUser(user.getId()));
+        }
 
     @Operation(
             summary = "Lista reservas por mesa",
@@ -122,12 +126,12 @@ public class ReservationController {
             @ApiResponse(responseCode = "401", description = "Não autenticado"),
             @ApiResponse(responseCode = "403", description = "Acesso negado")
     })
-    @PostMapping
-    public ResponseEntity<ReservationResponseDTO> create(@Valid @RequestBody Reservations reservation) {
-        return ResponseEntity.ok(reservationUtils.toDTO(
-            reservationService.create(reservation)
-        ));
-    }
+        @PostMapping
+        public ResponseEntity<ReservationResponseDTO> create(@RequestBody Reservations reservation) {
+                return ResponseEntity.ok(reservationUtils.toDTO(
+                        reservationService.create(reservation)
+                ));
+        }
 
     @Operation(
             summary = "Confirma uma reserva",

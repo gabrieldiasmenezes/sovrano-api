@@ -29,6 +29,9 @@ public class WaitlistService {
     private UserRepository userRepository;
 
     @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
     private WaitlistUtils waitlistUtils;
 
     @Autowired
@@ -44,7 +47,7 @@ public class WaitlistService {
         // impedir duplicação
         waitlistRepository.findByUserIdAndDateAndPeriod(userId, today, period)
                 .ifPresent(w -> {
-                    throw new RuntimeException("Você já está na fila de espera para este período.");
+                    throw new IllegalStateException("Você já está na fila de espera para este período.");
                 });
 
         globalUtils.validateLegalPriority(hasLegalPriority, legalReason);
@@ -60,7 +63,24 @@ public class WaitlistService {
                 .legalPriorityReason(hasLegalPriority ? legalReason : null)
                 .build();
 
-        return waitlistRepository.save(entry);
+        Waitlist saved = waitlistRepository.save(entry);
+
+        // enviar e-mail com a posição atual (entrar na fila)
+        List<Waitlist> sameList = orderWaitlist(
+            waitlistRepository.findByDateAndPeriodAndStatusOrderByCreatedAt(
+                saved.getDate(), saved.getPeriod(), WaitlistStatus.WAITING
+            )
+        );
+
+        int pos = -1;
+        for (int i = 0; i < sameList.size(); i++) {
+            if (java.util.Objects.equals(sameList.get(i).getId(), saved.getId())) { pos = i + 1; break; }
+        }
+
+        var user = userRepository.findById(saved.getUserId()).orElse(null);
+        if (user != null) notificationService.sendWaitlistPositionEmail(user, saved, pos);
+
+        return saved;
     }
 
     // -----------------------------------------------------------
@@ -95,7 +115,7 @@ public class WaitlistService {
             // calcula posição
             int pos = -1;
             for (int i = 0; i < sameList.size(); i++) {
-                if (sameList.get(i).getId().equals(w.getId())) {
+                if (java.util.Objects.equals(sameList.get(i).getId(), w.getId())) {
                     pos = i + 1;
                     break;
                 }
@@ -130,7 +150,7 @@ public class WaitlistService {
         );
 
         for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).getUserId().equals(userId)) {
+            if (java.util.Objects.equals(list.get(i).getUserId(), userId)) {
                 return i + 1;
             }
         }
@@ -161,7 +181,64 @@ public class WaitlistService {
         waitlistRepository.save(next);
 
         // criar uma reserva temporária aguardando confirmação
-        waitlistUtils.createPendingWaitlistReservation(next, tableId);
+        var reservation = waitlistUtils.createPendingWaitlistReservation(next, tableId);
+
+        // enviar e-mail de notificação com link de confirmação
+        var user = userRepository.findById(next.getUserId()).orElse(null);
+        if (user != null) notificationService.sendWaitlistNotifiedEmail(user, next, reservation);
+    }
+
+    // -----------------------------------------------------------
+    // ADMIN: deletar uma entrada da waitlist
+    public void deleteEntry(Long id) {
+        GlobalUtils.check(!waitlistRepository.existsById(id), "Entrada da waitlist não encontrada.");
+        waitlistRepository.deleteById(id);
+    }
+
+    // -----------------------------------------------------------
+    // ADMIN: notificar uma entrada específica (manual)
+    // cria a reserva PENDING usando o tableId informado
+    public Waitlist notifyEntry(Long id, Long tableId) {
+        Waitlist w = waitlistRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Entrada da waitlist não encontrada."));
+
+        if (w.getStatus() != WaitlistStatus.WAITING) {
+            throw new IllegalStateException("Só é possível notificar entradas com status WAITING.");
+        }
+
+        w.setStatus(WaitlistStatus.NOTIFIED);
+        waitlistRepository.save(w);
+
+        // criar reserva temporária
+        var reservation = waitlistUtils.createPendingWaitlistReservation(w, tableId);
+
+        var user = userRepository.findById(w.getUserId()).orElse(null);
+        if (user != null) notificationService.sendWaitlistNotifiedEmail(user, w, reservation);
+
+        return w;
+    }
+
+    // -----------------------------------------------------------
+    // ADMIN: expirar uma entrada (manual)
+    public Waitlist expireEntry(Long id) {
+        Waitlist w = waitlistRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Entrada da waitlist não encontrada."));
+
+        w.setStatus(WaitlistStatus.EXPIRED);
+        return waitlistRepository.save(w);
+    }
+
+    // -----------------------------------------------------------
+    // CUSTOMER: permite ao usuário remover sua própria entrada
+    public void leaveWaitlist(Long id, Long userId) {
+        Waitlist w = waitlistRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Entrada da waitlist não encontrada."));
+
+        if (!java.util.Objects.equals(w.getUserId(), userId)) {
+            throw new IllegalStateException("Você não pode remover uma entrada de outro usuário.");
+        }
+
+        waitlistRepository.deleteById(id);
     }
 
     // -----------------------------------------------------------
@@ -180,8 +257,11 @@ public class WaitlistService {
                 if (la != lb) return Integer.compare(la, lb);
 
                 // 2️⃣ VIP (se não tiver prioridade legal)
-                int va = ua != null ? ua.getVipLevel().getOrder() : PriorityType.NONE.getOrder();
-                int vb = ub != null ? ub.getVipLevel().getOrder() : PriorityType.NONE.getOrder();
+                int va = PriorityType.NONE.getOrder();
+                int vb = PriorityType.NONE.getOrder();
+
+                if (ua != null && ua.getVipLevel() != null) va = ua.getVipLevel().getOrder();
+                if (ub != null && ub.getVipLevel() != null) vb = ub.getVipLevel().getOrder();
 
                 if (va != vb) return Integer.compare(va, vb);
 

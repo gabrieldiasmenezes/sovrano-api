@@ -16,6 +16,7 @@ import br.com.fiap.reserva_Sovrano.model.BlackoutTime;
 import br.com.fiap.reserva_Sovrano.model.dto.BlackoutTimeRequestDTO;
 import br.com.fiap.reserva_Sovrano.service.BlackoutTimeService;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,7 +41,7 @@ public class BlackoutTimeController {
             @ApiResponse(responseCode = "403", description = "Acesso negado — não é administrador")
         }
     )
-    public ResponseEntity<BlackoutTime> create(@RequestBody BlackoutTimeRequestDTO dto) {
+    public ResponseEntity<BlackoutTime> create(@Valid @RequestBody BlackoutTimeRequestDTO dto) {
         return ResponseEntity.ok(service.create(dto));
     }
 

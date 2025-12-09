@@ -64,10 +64,10 @@ public class TableController {
             @ApiResponse(responseCode = "404", description = "Mesa não encontrada")
         }
     )
-    public ResponseEntity<Tables> updateAvailability(
-            @Valid @PathVariable Long id,
+        public ResponseEntity<Tables> updateAvailability(
+            @PathVariable Long id,
             @RequestBody Tables table
-    ) {
+        ) {
         return ResponseEntity.ok(tableService.update(id, table));
     }
 

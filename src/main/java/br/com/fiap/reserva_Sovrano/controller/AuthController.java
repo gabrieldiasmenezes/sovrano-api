@@ -60,15 +60,20 @@ public class AuthController {
         String email = body.get("email");
         String password = body.get("password");
 
+        if (email == null || email.isBlank() || password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Email e senha são obrigatórios.");
+        }
+
         // autenticação
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password)
         );
 
-        // gerar token
-        String token = tokenService.createToken(
-                userService.findByEmail(email).get()
-        );
+        // gerar token (garantir que o usuário existe)
+        var user = userService.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+        String token = tokenService.createToken(user);
 
         Map<String, String> response = new HashMap<>();
         response.put("token", token);

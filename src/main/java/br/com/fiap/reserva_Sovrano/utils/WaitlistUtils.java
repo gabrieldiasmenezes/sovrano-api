@@ -47,6 +47,15 @@ public class WaitlistUtils {
      * conforme sua regra; aqui usamos NOW para indicar imediata.
      */
     public Reservations createPendingWaitlistReservation(Waitlist waitlistEntry, Long tableId) {
+        // Garantir que exista um usuário associado — o modelo de reservas exige userId não-nulo.
+        if (waitlistEntry.getUserId() == null) {
+            throw new IllegalArgumentException("Não é possível criar reserva temporária sem userId.");
+        }
+
+        if (tableId == null) {
+            throw new IllegalArgumentException("TableId é obrigatório para criar reserva temporária.");
+        }
+
         Reservations r = Reservations.builder()
                 .reservationDateTime(LocalDateTime.now()) // reserva imediata; ajuste se preferir usar waitlistEntry.date+period
                 .peopleCount(waitlistEntry.getPeopleCount())

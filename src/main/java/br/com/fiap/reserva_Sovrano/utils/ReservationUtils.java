@@ -75,7 +75,7 @@ public class ReservationUtils {
         Reservations r = getReservation(id);
 
         GlobalUtils.check(
-            !r.getUserId().equals(userId),
+            !java.util.Objects.equals(r.getUserId(), userId),
             "Você não pode alterar uma reserva de outro usuário"
         );
 

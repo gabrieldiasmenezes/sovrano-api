@@ -39,6 +39,34 @@ public class WaitlistController {
             )
         );
     }
+
+    @Operation(
+        summary = "Admin - deletar entrada da waitlist",
+        description = "Remove uma entrada específica da fila de espera. Apenas ADMIN."
+    )
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        waitlistService.deleteEntry(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+        summary = "Admin - notificar entrada manualmente",
+        description = "Marca a entrada como NOTIFIED e cria reserva PENDING para o usuário (é necessário informar tableId)."
+    )
+    @PutMapping("/{id}/notify")
+    public ResponseEntity<?> notifyEntry(@PathVariable Long id, @RequestParam Long tableId) {
+        return ResponseEntity.ok(waitlistService.notifyEntry(id, tableId));
+    }
+
+    @Operation(
+        summary = "Admin - expirar entrada da waitlist",
+        description = "Marca a entrada como EXPIRED (manual)."
+    )
+    @PutMapping("/{id}/expire")
+    public ResponseEntity<?> expireEntry(@PathVariable Long id) {
+        return ResponseEntity.ok(waitlistService.expireEntry(id));
+    }
     
     @Operation(
         summary = "Admin - visualizar lista de espera",
@@ -46,6 +74,7 @@ public class WaitlistController {
     )
     @GetMapping("/admin")
     public ResponseEntity<?> adminView(
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
             @RequestParam LocalDate date,
             @RequestParam Period period
     ) {

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 @RestController
 @RequestMapping("/reservations/me")
 @Tag(name = "Reservas (Cliente)", description = "Endpoints para o usuário autenticado gerenciar suas próprias reservas.")
@@ -40,11 +41,11 @@ public class ReservationCustomerController {
         }
     )
     @GetMapping
-    public ResponseEntity<?> getMyReservations(
+        public ResponseEntity<?> getMyReservations(
             Authentication auth,
-            ReservationStatusFilter filter,
+            @org.springframework.web.bind.annotation.ModelAttribute ReservationStatusFilter filter,
             Pageable pageable
-    ) {
+        ) {
         return ResponseEntity.ok(userService.getMyReservations(auth, filter, pageable));
     }
 

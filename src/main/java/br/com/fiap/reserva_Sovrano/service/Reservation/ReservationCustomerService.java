@@ -30,6 +30,11 @@ public class ReservationCustomerService {
     @Autowired
     private ReservationValidate reservationValidate;
 
+        @Autowired
+        private br.com.fiap.reserva_Sovrano.service.NotificationService notificationService;
+        @Autowired
+        private br.com.fiap.reserva_Sovrano.repository.UserRepository userRepository;
+
 
     // =======================================================
     // LISTAR MINHAS RESERVAS
@@ -82,14 +87,20 @@ public class ReservationCustomerService {
 
         // 🔹 Verificação de no-show
         reservationValidate.validateNoShowLimit(userId);
-        
+
         if (!reservation.isHasLegalPriority()) {
                 reservation.setLegalPriorityReason(null);
         }
 
         reservation.setStatus(StatusReservation.PENDING);
 
-        return reservationRepository.save(reservation);
+                Reservations saved = reservationRepository.save(reservation);
+
+                // Enviar email de confirmação ao usuário
+                var user = userRepository.findById(userId).orElse(null);
+                if (user != null) notificationService.sendReservationCreatedEmail(user, saved);
+
+                return saved;
     }
 
 
@@ -103,12 +114,6 @@ public class ReservationCustomerService {
 
         Reservations reservation =
                 reservationUtils.getReservationOwnedByUser(id, userId);
-
-        // Verifica se a mesa ainda está livre para esse horário
-        reservationValidate.validateTableAvailability(
-                reservation.getTableId(),
-                reservation.getReservationDateTime()
-        );
 
         reservation.setStatus(StatusReservation.CONFIRMED);
 
