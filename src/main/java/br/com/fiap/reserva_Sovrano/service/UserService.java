@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import br.com.fiap.reserva_Sovrano.components.PriorityType;
 import br.com.fiap.reserva_Sovrano.components.UserRole;
 import br.com.fiap.reserva_Sovrano.model.Users;
+import br.com.fiap.reserva_Sovrano.model.dto.UserPasswordUpdateDto;
+import br.com.fiap.reserva_Sovrano.model.dto.UserUpdateDto;
 import br.com.fiap.reserva_Sovrano.repository.UserRepository;
 import br.com.fiap.reserva_Sovrano.utils.GlobalUtils;
 
@@ -40,27 +42,59 @@ public class UserService {
         user.setVisitsCount(0);
         user.setVipLevel(user.getVipLevel() == PriorityType.LEGAL ? PriorityType.LEGAL : PriorityType.NONE);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole(UserRole.CUSTOMER);
         return userRepository.save(user);
     }
 
-    public Users update(String email, Users updated){
+    public Users createAdmin(Users user){
+        GlobalUtils.check(userRepository.existsByEmail(user.getEmail()),
+            "Email já registrado."
+        );
+
+        initializeUserFields(user);
+        user.setVisitsCount(0);
+        user.setVipLevel(user.getVipLevel() == PriorityType.LEGAL ? PriorityType.LEGAL : PriorityType.NONE);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole(UserRole.ADMIN);
+        return userRepository.save(user);
+    }
+    public Users update(String email, UserUpdateDto dto) {
         Users user = userRepository.findByEmail(email)
             .orElseThrow(() -> new IllegalArgumentException("User not found."));
 
-        user.setName(updated.getName());
-        user.setPhone(updated.getPhone());
-        user.setPhotoUrl(updated.getPhotoUrl());
-
-        // Prioridade legal informada pelo usuário
-        if (updated.getVipLevel() == PriorityType.LEGAL) {
-            user.setVipLevel(PriorityType.LEGAL);
+        // Atualiza apenas campos permitidos
+        if (dto.name() != null) {
+            user.setName(dto.name());
         }
 
-        // VIP recalculado automaticamente
+        if (dto.phone() != null) {
+            user.setPhone(dto.phone());
+        }
+
+        // VIP SEMPRE recalculado pelo sistema
         updateVipLevel(user);
 
         return userRepository.save(user);
     }
+
+    public void updatePassword(String email, UserPasswordUpdateDto dto) {
+        Users user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found."));
+
+        // Confere senha atual
+        if (!passwordEncoder.matches(dto.currentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect.");
+        }
+
+        // Evita reutilizar a mesma senha
+        if (passwordEncoder.matches(dto.newPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("New password must be different from the current one.");
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.newPassword()));
+        userRepository.save(user);
+    }
+
 
     public void delete(String email) {
         Users existingUser= GlobalUtils.getOrThrow(

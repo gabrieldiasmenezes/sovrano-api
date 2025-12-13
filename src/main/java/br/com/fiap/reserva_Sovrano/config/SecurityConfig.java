@@ -25,37 +25,35 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf().disable()
+            .cors(cors -> {})   // ✅ habilita CORS
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests()
 
-                // ------------------------------------
-                // PUBLIC (Somente login + criar user + swagger)
-                // ------------------------------------
+                // 🔥 LIBERAR PREFLIGHT
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // PUBLIC
                 .requestMatchers("/login/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/users").permitAll()
 
-                // SWAGGER (somente isso público)
+                // SWAGGER
                 .requestMatchers("/swagger-ui/**").permitAll()
                 .requestMatchers("/v3/api-docs/**").permitAll()
                 .requestMatchers("/v3/api-docs.yaml").permitAll()
 
-                // ------------------------------------
-                // CUSTOMER ROUTES
-                // ------------------------------------
+                // CUSTOMER
                 .requestMatchers("/users/me/**").authenticated()
                 .requestMatchers("/reservations/me/**").hasRole("CUSTOMER")
                 .requestMatchers("/waitlist/me/**").hasRole("CUSTOMER")
 
-                // ------------------------------------
-                // ADMIN ROUTES
-                // ------------------------------------
+                // ADMIN
                 .requestMatchers("/users/{id}/unblock").hasRole("ADMIN")
                 .requestMatchers("/reservations/**").hasRole("ADMIN")
                 .requestMatchers("/tables/**").hasRole("ADMIN")
                 .requestMatchers("/blackouts/**").hasRole("ADMIN")
                 .requestMatchers("/waitlist/**").hasRole("ADMIN")
+                .requestMatchers("/users/admin/**").hasRole("ADMIN")
 
-                // Qualquer outra rota → apenas ADMIN
                 .anyRequest().hasRole("ADMIN")
 
             .and()

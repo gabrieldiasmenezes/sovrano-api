@@ -6,7 +6,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import br.com.fiap.reserva_Sovrano.model.Users;
+import br.com.fiap.reserva_Sovrano.model.dto.UserDto;
+import br.com.fiap.reserva_Sovrano.model.dto.UserPasswordUpdateDto;
 import br.com.fiap.reserva_Sovrano.model.dto.UserResponse;
+import br.com.fiap.reserva_Sovrano.model.dto.UserUpdateDto;
 import br.com.fiap.reserva_Sovrano.repository.UserRepository;
 import br.com.fiap.reserva_Sovrano.service.UserService;
 import jakarta.validation.Valid;
@@ -49,7 +52,7 @@ public class UserController {
                             user.getName(),
                             user.getEmail(),
                             user.getPhone(),
-                            user.getVipLevel()
+                            user.getRole()
                         )
                 ))
                 .orElse(ResponseEntity.notFound().build());
@@ -70,20 +73,43 @@ public class UserController {
         }
     )
     public ResponseEntity<UserResponse> updateMe(
-            @Valid @RequestBody Users user,
+            @Valid @RequestBody UserUpdateDto dto,
             Authentication authentication
     ) {
         String email = authentication.getName();
-        Users updatedUser = userService.update(email, user);
+
+        Users updatedUser = userService.update(email, dto);
 
         return ResponseEntity.ok(
-                new UserResponse(
-                    updatedUser.getName(),
-                    updatedUser.getEmail(),
-                    updatedUser.getPhone(),
-                    updatedUser.getVipLevel()
-                )
+            new UserResponse(
+                updatedUser.getName(),
+                updatedUser.getEmail(),
+                updatedUser.getPhone(),
+                updatedUser.getRole()
+            )
         );
+    }
+
+    @PutMapping("/me/password")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Alterar senha do usuário logado",
+        description = "Exige a senha atual para confirmação.",
+        responses = {
+            @ApiResponse(responseCode = "204", description = "Senha alterada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Senha atual incorreta"),
+            @ApiResponse(responseCode = "401", description = "Token inválido")
+        }
+    )
+    public ResponseEntity<Void> updatePassword(
+            @Valid @RequestBody UserPasswordUpdateDto dto,
+            Authentication authentication
+    ) {
+        String email = authentication.getName();
+
+        userService.updatePassword(email, dto);
+
+        return ResponseEntity.noContent().build();
     }
 
     // ----------------------------------------------------------------------
@@ -117,7 +143,13 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "Dados inválidos")
         }
     )
-    public ResponseEntity<UserResponse> create(@Valid @RequestBody Users user) {
+    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserDto request) {
+        Users user = Users.builder()
+            .name(request.name())
+            .email(request.email())
+            .password(request.password())
+            .phone(request.phone())
+            .build();
         Users createdUser = userService.create(user);
 
         return ResponseEntity.ok(
@@ -125,7 +157,35 @@ public class UserController {
                     createdUser.getName(),
                     createdUser.getEmail(),
                     createdUser.getPhone(),
-                    createdUser.getVipLevel()
+                    createdUser.getRole()
+                )
+        );
+    }
+
+    @PostMapping("/admin")
+    @Operation(
+        summary = "Criar novo usuário (registro)",
+        description = "Endpoint público para criar uma conta no sistema. Não requer token.",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Usuário criado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+        }
+    )
+    public ResponseEntity<UserResponse> createAdmin(@Valid @RequestBody UserDto request) {
+        Users user = Users.builder()
+            .name(request.name())
+            .email(request.email())
+            .password(request.password())
+            .phone(request.phone())
+            .build();
+        Users createdUser = userService.createAdmin(user);
+
+        return ResponseEntity.ok(
+                new UserResponse(
+                    createdUser.getName(),
+                    createdUser.getEmail(),
+                    createdUser.getPhone(),
+                    createdUser.getRole()
                 )
         );
     }
