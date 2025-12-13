@@ -54,7 +54,6 @@ public class UserService {
         // Prioridade legal informada pelo usuário
         if (updated.getVipLevel() == PriorityType.LEGAL) {
             user.setVipLevel(PriorityType.LEGAL);
-            user.setPriorityReason(updated.getPriorityReason());
         }
 
         // VIP recalculado automaticamente

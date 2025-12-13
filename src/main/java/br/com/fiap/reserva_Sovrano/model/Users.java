@@ -44,7 +44,6 @@ public class Users {
     @Column(name = "vip_level")
     private PriorityType vipLevel;        // VIP_1, VIP_2...
 
-    private String priorityReason;            // "idoso", "pcd", "gestante"
 
     @Column(name = "visits_count")
     private int visitsCount;                   // visitas acumuladas (VIP automático)
