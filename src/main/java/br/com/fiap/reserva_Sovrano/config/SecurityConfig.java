@@ -35,6 +35,8 @@ public class SecurityConfig {
                 // PUBLIC
                 .requestMatchers("/login/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/users").permitAll()
+                .requestMatchers(HttpMethod.GET,"/tables").permitAll()
+
 
                 // SWAGGER
                 .requestMatchers("/swagger-ui/**").permitAll()
