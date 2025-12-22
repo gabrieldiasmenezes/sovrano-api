@@ -1,14 +1,50 @@
 package br.com.fiap.reserva_Sovrano.repository;
 
-import java.util.List;
 
+import br.com.fiap.reserva_Sovrano.components.StatusReservation;
+import br.com.fiap.reserva_Sovrano.model.Reservations;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+import java.time.LocalDateTime;
+import java.util.List;
 
-import br.com.fiap.reserva_Sovrano.model.Reservation;
+@Repository
+public interface ReservationRepository extends JpaRepository<Reservations, Long>,JpaSpecificationExecutor<Reservations> {
 
-public interface ReservationRepository extends JpaRepository<Reservation, Long>,JpaSpecificationExecutor<Reservation> {
-    
-    List<Reservation> findByAccount_Email(String email);
+    // Buscar reservas por usuário
+    List<Reservations> findByUserId(Long userId);
 
+    List<Reservations> findByTableId(Long tableId);
+
+    // Verificar se mesa está ocupada em um horário
+    boolean existsByTableIdAndReservationDateTimeAndStatus(
+        Long tableId,
+        LocalDateTime reservationDateTime,
+        StatusReservation status
+    );
+
+    List<Reservations> findByUserIdAndStatusNot(Long userId, StatusReservation status);
+
+    List<Reservations> findByReservationDateTimeBetween(LocalDateTime start,LocalDateTime end);
+    List<Reservations> findAllByStatus(StatusReservation status);
+
+    List<Reservations> findByUserIdAndReservationDateTimeBetweenAndStatusIn(
+        Long userId,
+        LocalDateTime start,
+        LocalDateTime end,
+        List<StatusReservation> statuses
+    );
+
+    boolean existsByTableIdAndReservationDateTimeBetween(
+        Long tableId,
+        LocalDateTime start,
+        LocalDateTime end
+    );
+
+    // Contar reservas do usuário com status NO_SHOW
+    long countByUserIdAndStatus(Long userId, StatusReservation status);
+
+    // Buscar reservas PENDING ou CONFIRMED de um usuário
+    List<Reservations> findByUserIdAndStatusIn(Long userId, List<StatusReservation> statuses);
 }

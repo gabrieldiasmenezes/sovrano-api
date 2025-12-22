@@ -1,63 +1,85 @@
 package br.com.fiap.reserva_Sovrano.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
+import br.com.fiap.reserva_Sovrano.service.CustomUserDetailsService;
 
 @Configuration
 public class SecurityConfig {
-    @Autowired
-    private AuthFilter authFilter;
-    @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
-        return http
-                .authorizeHttpRequests(auth -> auth
-            // Libera primeiro o que for público
-                .requestMatchers("/login").permitAll()
-                .requestMatchers("/login/**").permitAll()
-                
-                // Depois coloca as regras protegidas
-                .requestMatchers(HttpMethod.GET, "/reservations/admin/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/reservations/user/**").hasRole("USER")
-                .requestMatchers(HttpMethod.POST, "/reservations/**").hasAnyRole("USER")
-                // Qualquer outra rota precisa estar autenticada
-                .anyRequest().authenticated()
-        )
-        .csrf(csrf -> csrf.disable())
-        .addFilterBefore(authFilter,UsernamePasswordAuthenticationFilter.class)
-        .httpBasic(Customizer.withDefaults())
-        .build();
-    }
-    // @Bean
-    // UserDetailsService userDetailsService() {
-    //     var user1=User.withUsername("gabriel")
-    //     .password("$2a$12$cqqq/j0Mq/Fk36QKAq3.ke36yuhwkmNrJLVBwhSJGMu0TkQCl9Q4K")
-    //     .roles("ADMIN")
-    //     .build();
-    //     var user2=User.withUsername("maria")
-    //     .password("$2a$12$x0Az8q6EHega0Na61JFhouuEeX62or7n0RgSv14iZtNTY6Xa7hPV2")
-    //     .roles("USER")
-    //     .build();
-    //     var users=List.of(user1,user2);
-    //     return new InMemoryUserDetailsManager(users);
-    // }
-    
-    @Bean
-    PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+
+    private final CustomUserDetailsService userDetailsService;
+    private final AuthFilter authFilter;
+
+    public SecurityConfig(CustomUserDetailsService userDetailsService, AuthFilter authFilter) {
+        this.userDetailsService = userDetailsService;
+        this.authFilter = authFilter;
     }
 
     @Bean
-    AuthenticationManager authManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .cors(cors -> {})   // ✅ habilita CORS
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests()
+
+                // 🔥 LIBERAR PREFLIGHT
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // PUBLIC
+                .requestMatchers("/login/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/users").permitAll()
+                .requestMatchers(HttpMethod.GET,"/tables").permitAll()
+
+
+                // SWAGGER
+                .requestMatchers("/swagger-ui/**").permitAll()
+                .requestMatchers("/v3/api-docs/**").permitAll()
+                .requestMatchers("/v3/api-docs.yaml").permitAll()
+
+                // CUSTOMER
+                .requestMatchers("/users/me/**").authenticated()
+                .requestMatchers("/reservations/me/**").hasRole("CUSTOMER")
+                .requestMatchers("/waitlist/me/**").hasRole("CUSTOMER")
+
+                // ADMIN
+                .requestMatchers("/users/{id}/unblock").hasRole("ADMIN")
+                .requestMatchers("/reservations/**").hasRole("ADMIN")
+                .requestMatchers("/tables/**").hasRole("ADMIN")
+                .requestMatchers("/blackouts/**").hasRole("ADMIN")
+                .requestMatchers("/waitlist/**").hasRole("ADMIN")
+                .requestMatchers("/users/admin/**").hasRole("ADMIN")
+
+                .anyRequest().hasRole("ADMIN")
+
+            .and()
+            .sessionManagement().disable();
+
+        http.addFilterBefore(
+            authFilter,
+            org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class
+        );
+
+        return http.build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+        return http.getSharedObject(AuthenticationManagerBuilder.class)
+                .userDetailsService(userDetailsService)
+                .passwordEncoder(passwordEncoder())
+                .and()
+                .build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

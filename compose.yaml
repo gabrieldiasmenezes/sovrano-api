@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=sovrano_db'
+      - 'POSTGRES_PASSWORD=sovrano_pass'
+      - 'POSTGRES_USER=sovrano_user'
+    ports:
+      - '5432:5432'
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - '1025:1025'   # SMTP
+      - '8025:8025'   # Web UI
